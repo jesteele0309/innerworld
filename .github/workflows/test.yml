@@ -2,6 +2,7 @@ name: Test
 on: [push, pull_request]
 permissions:
   contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -10,5 +11,38 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node --check app.js
-      - run: npm test
+
+      - name: Syntax-check every module
+        run: |
+          for file in src/*.js src/views/*.js server.js tests/*.mjs; do
+            node --check "$file"
+          done
+
+      - name: Unit and server tests
+        run: npm test
+
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Playwright is not a dependency of the app — npm test stays
+      # dependency-free. The browser check installs it here only.
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@1
+          npx playwright install --with-deps chromium
+
+      - name: Run the app
+        run: |
+          node server.js &
+          for _ in $(seq 1 30); do
+            curl -sf http://localhost:3000/api/status > /dev/null && break
+            sleep 1
+          done
+
+      - name: Walk the daily loop
+        run: npm run e2e
