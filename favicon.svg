@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="INNERWORLD">
+  <rect width="64" height="64" rx="12" fill="#15120E"/>
+  <circle cx="30" cy="28" r="15" fill="#C8913A"/>
+  <circle cx="40" cy="38" r="11" fill="#2E3560" opacity="0.85"/>
+  <path d="M10 46c12-6 32-6 44 0" stroke="#EDE4D3" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+</svg>

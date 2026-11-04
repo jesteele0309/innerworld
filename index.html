@@ -1,9 +1,54 @@
 <!doctype html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="A quiet daily practice in art and reflection. INNERWORLD."><meta name="theme-color" content="#f5f1e8"><title>INNERWORLD — Your inner life, made visible</title><link rel="stylesheet" href="styles.css"><script type="module" src="app.js"></script></head>
-<body><a class="skip" href="#main">Skip to content</a>
-<header class="masthead"><a href="#today" class="wordmark">INNERWORLD<span>YOUR INNER LIFE, MADE VISIBLE</span></a><span class="eyebrow edition">A DAILY VISUAL SELF-PORTRAIT</span><button id="preferences" class="plain">Your visual language</button></header>
-<nav aria-label="Main navigation"><a href="#today">Today</a><a href="#studio">Ask, then see</a><a href="#folio">Your Folio <span id="count">0</span></a></nav>
-<main id="main" tabindex="-1"></main><footer><span>A little space for being you.</span><button class="plain" id="privacy">Privacy & about this version</button></footer><p id="notice" role="status" aria-live="polite"></p>
-<dialog id="setup" aria-labelledby="setup-title"><form id="setup-form"><button class="close" type="button" data-close="setup" aria-label="Close preferences">×</button><p class="eyebrow">YOUR VISUAL LANGUAGE</p><h2 id="setup-title">What feels like you?</h2><p>Your taste shapes the image. It doesn’t define your mood.</p><fieldset><legend>Choose a medium</legend><div class="choices"><label><input type="radio" name="medium" value="grainy analog photography" checked> Grainy photography</label><label><input type="radio" name="medium" value="tactile torn-paper collage"> Tactile collage</label><label><input type="radio" name="medium" value="expressive painting with visible brushwork"> Painterly surfaces</label><label><input type="radio" name="medium" value="delicate graphite drawing"> Quiet drawings</label></div></fieldset><fieldset><legend>Choose a palette</legend><div class="choices"><label><input type="radio" name="palette" value="warm cream, saturated red and deep blue" checked> Red / cream / blue</label><label><input type="radio" name="palette" value="charcoal, chalk white and warm gray"> Ink / chalk</label><label><input type="radio" name="palette" value="ochre, forest green and pale linen"> Earth / forest</label></div></fieldset><label>Recurring motifs<input name="motifs" maxlength="150" placeholder="Windows, water, empty rooms…"></label><label class="check"><input type="checkbox" name="symbolic"> Include a symbolic lens</label><p class="small">Optional creative symbolism, not a calculated birth chart or prediction. No birth information is collected in this version.</p><button class="primary" type="submit">Keep this language</button><p class="small">Preferences and Folio stay in this browser. No account or cloud sync.</p></form></dialog>
-<dialog id="about" aria-labelledby="about-title"><button class="close" data-close="about" aria-label="Close privacy information">×</button><p class="eyebrow">A CLEAR BOUNDARY</p><h2 id="about-title">Your meaning stays yours.</h2><p>This development version stores notes, preferences and saved pieces on this device, in this browser. It is not encrypted or account-protected. Other people using this browser profile may access them. Clearing browser data removes them. Export a backup from your Folio.</p><p>Image generation is optional. When connected, only the scene prompt you review and explicitly approve goes to OpenAI. Keep names, birth details and private journal text out of that prompt. Provider data policies apply.</p><p>The example artwork is pre-made, not a reading of you. Reflections are editable creative prompts, not assessments, therapy or predictions. Birth-chart calculation, relationship pieces, subscriptions and cloud accounts are not yet implemented.</p><p>No analytics, advertising, background generation or automatic sharing.</p></dialog>
-</body></html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="A daily question, a colour, and a small painting of your own day. INNERWORLD.">
+<meta name="theme-color" content="#15120E">
+<title>INNERWORLD — Your inner life, made visible</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/styles.css">
+<script type="module" src="/src/app.js"></script>
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="masthead">
+  <a class="wordmark" href="#today">INNERWORLD<span>Your inner life, made visible</span></a>
+  <button type="button" class="link" data-open-dialog="about">Privacy</button>
+</header>
+
+<main id="main" tabindex="-1">
+  <div class="pane">
+    <p class="eyebrow">Loading</p>
+    <h1 class="display">Today is being laid out.</h1>
+  </div>
+</main>
+
+<p id="notice" role="status" aria-live="polite"></p>
+
+<dialog id="about" aria-labelledby="about-title">
+  <button type="button" class="dialog-close" data-close-dialog="about" aria-label="Close">&times;</button>
+  <p class="eyebrow">A clear boundary</p>
+  <h2 id="about-title">Your meaning stays yours.</h2>
+
+  <h3>Where things are kept</h3>
+  <p>Reflections, feeling words, preferences and paintings are stored in this browser, on this device. There is no account and no cloud sync. Storage here is not encrypted and not protected by a password, so anyone using this browser profile can reach it, and clearing browser data removes it. Export a backup from My World if you want a copy.</p>
+
+  <h3>What is made by a person, and what is not</h3>
+  <p>Every question, essay, drift sequence and walk in INNERWORLD is written by a person. Nothing you read or hear here is generated.</p>
+  <p>The painting is the one generated thing. By default it is drawn on your device from your palette and mark style, and nothing leaves this machine. If a painting model is configured, it receives the question, the palette and the mark style — and nothing else. Your reflection is never part of that request, and the server refuses any request carrying extra fields.</p>
+
+  <h3>Sharing</h3>
+  <p>Sharing sends the title and the day's question. It never includes your reflection or your feeling words. Printing a chapter includes titles and questions, not reflections. A backup export <em>does</em> include your reflections in plain text.</p>
+
+  <h3>What this is not</h3>
+  <p>Reflections are creative prompts, not assessment, therapy or prediction. There is no birth chart, no calculated astrology and no prediction anywhere in the app. There are no streaks, no notifications, no analytics, no advertising and no background generation. Quiet days are shown as quiet days.</p>
+
+  <h3>Not yet built</h3>
+  <p>Accounts, cloud storage, cross-device sync, backup restore, shared chapters, printed books and subscriptions are not implemented in this version. The chapter print button uses your browser's own print dialog.</p>
+</dialog>
+
+</body>
+</html>
