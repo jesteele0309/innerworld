@@ -5357,7 +5357,11 @@ async function artistKeep() {
   piece.feelings = state.draft.feelings;
   piece.colour = state.draft.colour;
   piece.question = state.content.question;
-  const blob = await (await fetch(image)).blob();
+  // Decoded here, not fetched: the site's security policy only lets the page
+  // fetch from its own address, and a data: address is not that.
+  const [head, encoded] = image.split(',');
+  const bytes = Uint8Array.from(atob(encoded), (c) => c.charCodeAt(0));
+  const blob = new Blob([bytes], { type: (head.match(/^data:(image\/[a-z]+)/) || [])[1] || 'image/jpeg' });
   await store.images.put(piece.id, blob);
   piece.painter = 'model';
   piece.seed = null;
@@ -5465,7 +5469,17 @@ const artistView = (() => {
       artistMake();
     };
     const keep = document.getElementById('artist-keep');
-    if (keep) keep.onclick = () => artistKeep();
+    if (keep) {
+      keep.onclick = async () => {
+        keep.disabled = true;
+        try {
+          await artistKeep();
+        } catch {
+          artist.error = 'That painting could not be saved in this browser. It is still here; try again.';
+          render();
+        }
+      };
+    }
   }
 
   return { html, mount };
