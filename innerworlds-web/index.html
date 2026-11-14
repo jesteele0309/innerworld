@@ -289,14 +289,14 @@ main:focus { outline: none; }
 .pill[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--ground); }
 
 /* ── tab bar ────────────────────────────────────────────────────────────── */
-/* Four tabs, always labelled, on an opaque ground, with the page padded for
+/* Five tabs, always labelled, on an opaque ground, with the page padded for
  * the bar's height so no list ever ends underneath it. */
 
 .tabs {
   position: sticky;
   bottom: 0;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   padding: 8px 6px calc(var(--safe-bottom) + 12px);
   border-top: 1px solid var(--rule-soft);
   background: var(--ground);
@@ -777,15 +777,69 @@ dialog input[type="text"] {
 .dialog-actions .button { flex: 1 1 140px; }
 
 .sky-card { color: var(--ink); align-items: flex-start; }
-.sky-moon {
-  width: 44px;
-  height: 44px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: linear-gradient(90deg, #2A241D 50%, var(--ink) 50%);
-  box-shadow: inset 0 0 0 1px var(--rule);
+.moon { display: block; flex-shrink: 0; }
+.sky-invite { display: flex; flex-direction: column; align-items: flex-start; }
+.sky-invite .sky-card { width: 100%; }
+.sky-hero { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+.sky-line { margin: 0; font-family: var(--serif); font-style: italic; font-size: 25px; line-height: 1.25; color: var(--ink); }
+.sky-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; border: 1px solid var(--rule-soft); border-radius: 12px; overflow: hidden; background: var(--rule-soft); }
+.sky-fact { display: flex; flex-direction: column; gap: 2px; padding: 12px; background: var(--ground); }
+.sky-fact strong { font-family: var(--serif); font-weight: 500; font-size: 20px; line-height: 1.15; }
+
+/* ── paintings from the museum ──────────────────────────────────────────── */
+
+.filters {
+  display: flex;
+  gap: 8px;
+  margin: 0 calc(var(--pane) * -1);
+  padding: 2px var(--pane) 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
-.sky-moon[data-phase="waning"] { background: linear-gradient(90deg, var(--ink) 50%, #2A241D 50%); }
+.filters::-webkit-scrollbar { display: none; }
+.filters .pill { display: inline-flex; align-items: center; gap: 7px; flex-shrink: 0; min-height: 40px; white-space: nowrap; color: var(--ink-soft); }
+.filters .pill .dot { width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 0 1px var(--rule); }
+.filters .pill[aria-pressed="true"] { color: var(--ground); }
+
+button.tile { width: 100%; padding: 0; border: 0; text-align: left; cursor: pointer; }
+.tile.work { background: transparent; border-radius: 6px; }
+.tile.work img { border-radius: 6px; }
+.tile.work .tile-text { padding: 8px 2px 10px; gap: 1px; }
+.tile.work .tile-title { font-size: 16px; }
+.tile.work .mono-sm { color: var(--muted); }
+.feed-note { min-height: 120px; }
+
+.art-card {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface);
+  color: var(--ink);
+  text-align: left;
+}
+.art-card img { display: block; width: 100%; height: auto; max-height: 420px; object-fit: cover; background: #2B2119; }
+.art-caption { display: flex; flex-direction: column; gap: 3px; padding: 14px 16px 16px; }
+.art-title { font-family: var(--serif); font-size: 24px; line-height: 1.15; }
+.art-wait { display: flex; align-items: flex-end; min-height: 240px; padding: 16px; border-radius: 12px; background: var(--surface-soft); }
+#daily-art:empty { display: none; }
+
+#work { padding: 22px; }
+.work-image { display: block; width: 100%; height: auto; max-height: 58dvh; object-fit: contain; margin: 12px 0 16px; border-radius: 6px; background: #1B1712; }
+#work h2 { margin: 0 0 8px; font-size: 29px; }
+.work-palette { display: flex; height: 26px; margin: 14px 0 8px; border-radius: 6px; overflow: hidden; }
+.work-palette span { flex: 1; }
+a.button { text-decoration: none; }
+
+.saved-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.saved-grid button { padding: 0; border: 0; border-radius: 6px; overflow: hidden; aspect-ratio: 1; background: var(--surface); }
+.saved-grid img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+.note-input { min-height: 96px; }
+.entry.note .entry-text { font-family: var(--serif); font-size: 20px; line-height: 1.35; color: var(--ink); }
+.entry .button.plain { align-self: flex-start; padding: 0; }
 
 .suggest { display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; border-left: 2px solid var(--accent); }
 .suggest p { margin: 0; }
@@ -878,26 +932,28 @@ dialog input[type="text"] {
   <h2 id="about-title">Your meaning stays yours.</h2>
 
   <h3>Where things are kept</h3>
-  <p>Reflections, feeling words, colour picks, preferences and paintings are stored in this browser, on this device. There is no account and no cloud sync. Works shown from the Metropolitan Museum of Art come from its Open Access collection and load from the museum’s servers. Storage here is not encrypted and not protected by a password, so anyone using this browser profile can reach it, and clearing browser data removes it. Copy a backup from My World if you want a copy.</p>
+  <p>Reflections, notes, feeling words, colour picks, saved paintings, preferences and your own paintings are stored in this browser, on this device. There is no account and no cloud sync. Works shown from the Metropolitan Museum of Art come from its Open Access collection and load from the museum’s servers, so the museum can see that this browser asked for them. Their colours are measured on this device to sort them. Storage here is not encrypted and not protected by a password, so anyone using this browser profile can reach it, and clearing browser data removes it. Copy a backup from My World if you want a copy.</p>
 
   <h3>What is generated, and what is not</h3>
   <p>Every question, essay, drift sequence and walk is written ahead of time and is the same for everyone. Suggestions and patterns in the Journal are counted on this device from your own entries. The texts in this first edition were drafted with AI assistance.</p>
   <p>The painting is the one thing made for you. It is drawn on your device from your palette and mark style, and nothing leaves this machine. Your reflection is never used to make it.</p>
 
   <h3>AI reflections</h3>
-  <p>These are off unless you turn them on in the Journal. When you press “Ask for a reflection”, your twelve most recent entries (the question, what you wrote, your feeling words and colour) are sent to Claude, an AI model made by Anthropic, which writes a short reflection back. Nothing is sent at any other time. The reflection can be wrong and is not medical or psychological advice.</p>
+  <p>These are off unless you turn them on in the Journal. When you press “Ask for a reflection”, your twelve most recent entries and notes (the question, what you wrote, your feeling words and colour) are sent to Claude, an AI model made by Anthropic, which writes a short reflection back. Nothing is sent at any other time. The reflection can be wrong and is not medical or psychological advice.</p>
 
   <h3>Sharing</h3>
   <p>Sharing copies the title and the day's question. It never includes your reflection, your feeling words or your colour pick. A backup <em>does</em> include your reflections in plain text.</p>
 
   <h3>What this is not</h3>
-  <p>Reflections are creative prompts, not assessment, therapy or prediction. Astrology is off unless you turn on the sky lens. If you do, your birth details stay on this device, the chart is calculated here, and it only adds a colour and a line to your day. Nothing in the app predicts anything. There are no streaks, no notifications, no analytics, no advertising and no background generation. Quiet days are shown as quiet days.</p>
+  <p>Reflections are creative prompts, not assessment, therapy or prediction. The Sky tab shows where the Moon and Sun are today, which is the same for everyone. The lens itself is off unless you turn it on. If you do, your birth details stay on this device, the chart is calculated here, and it only adds a colour and a line to your day. Nothing in the app predicts anything. There are no streaks, no notifications, no analytics, no advertising and no background generation. Quiet days are shown as quiet days.</p>
 
   <h3>Not in this version</h3>
   <p>Accounts, cloud storage, cross-device sync, shared chapters, printed books and subscriptions.</p>
 </dialog>
 
 <dialog id="ask" aria-labelledby="ask-title"></dialog>
+
+<dialog id="work" aria-labelledby="work-title"></dialog>
 
 <!-- Astronomy Engine 2.1.19, MIT licence, Don Cross. Embedded so nothing is fetched. -->
 <script>/*
@@ -1216,6 +1272,9 @@ const defaults = {
   ai: false,
   aiLast: null,
   sky: { on: false, date: '', time: '', place: '' },
+  skyInvite: true,
+  notes: [],
+  saved: [],
   tuned: false,
   lean: [],
   mark: 'wash',
@@ -2801,6 +2860,8 @@ const icons = {
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
   info:
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
+  sky:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.2A8.5 8.5 0 1 1 9.8 4a6.8 6.8 0 0 0 10.2 10.2z"/></svg>',
   tick:
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4 10-10"/></svg>',
 };
@@ -2810,11 +2871,12 @@ function icon(name, className = 'icon') {
 }
 
 // Every tab carries its label at all times. An icon-only tab bar makes people
-// learn four abstract glyphs before they can navigate.
+// learn five abstract glyphs before they can navigate.
 const TABS = [
   { route: 'today', label: 'Today', icon: 'today' },
   { route: 'explore', label: 'Explore', icon: 'explore' },
   { route: 'journal', label: 'Journal', icon: 'read' },
+  { route: 'sky', label: 'Sky', icon: 'sky' },
   { route: 'world', label: 'My World', icon: 'world' },
 ];
 
@@ -2907,6 +2969,9 @@ function html(ctx) {
       </div>
 
       ${skyCard()}
+      ${skyInvite()}
+
+      ${APP.hosted ? '<div id="daily-art"><div class="art-wait"><p class="muted-sm" role="status">Finding a painting for today…</p></div></div>' : ''}
 
       <div class="suggest">
         <p class="kicker muted">A suggestion for today</p>
@@ -2955,7 +3020,11 @@ function resumeNote(progress) {
   </a>`;
 }
 
-function mount() {}
+function mount(ctx) {
+  mountDailyArt();
+  const hide = document.getElementById('sky-hide');
+  if (hide) hide.onclick = () => ctx.actions.setPref('skyInvite', false);
+}
 
 return { html, mount };
 })();
@@ -3558,10 +3627,28 @@ function html(ctx) {
         <p class="muted-sm">The five portraits that say the most about you. Pin one from its own page.</p>
       </section>
 
+      <section class="stack-sm">
+        <div class="row-between">
+          <p class="kicker muted">Saved paintings</p>
+          <span class="mono-sm">${savedWorks().length}</span>
+        </div>
+        ${
+          savedWorks().length
+            ? `<div class="saved-grid" id="saved-grid">${savedWorks()
+                .slice(0, 6)
+                .map(
+                  (w) => `<button type="button" data-work="${esc(String(w.id))}" aria-label="${esc(w.title)}, ${esc(w.artist)}"><img src="${esc(w.image)}" referrerpolicy="no-referrer" alt="" loading="lazy"></button>`,
+                )
+                .join('')}</div>
+               <button type="button" class="link" id="see-saved">See all saved paintings</button>`
+            : '<p class="muted-sm">Save a painting from Explore and it is kept here.</p>'
+        }
+      </section>
+
       <div class="stack-sm">
         ${row('new-chapter', 'Begin a new chapter', 'Close this one and name the next. Nothing is lost.')}
         ${row('copy-chapter', 'Copy this chapter as text', `${mine.length} title${mine.length === 1 ? '' : 's'} and questions. Your reflections are left out.`)}
-        ${row('sky', skyOn() ? 'Sky lens · on' : 'Sky lens · off', 'Optional astrology. It adds one colour and one line a day, and predicts nothing.')}
+        ${row('sky', skyOn() ? 'Sky lens · on' : 'Sky lens · off', 'Optional astrology, also under the Sky tab. It adds one colour and one line a day, and predicts nothing.')}
         ${row('retune', 'Tune your taste again', 'Ten more quick picks. They steer the mark style and one or two colours.')}
         ${row('backup', 'Copy a private backup', 'Text that does include your reflections. Keep it somewhere safe.')}
         ${row('restore', 'Restore a backup', 'Paste a backup to bring portraits back on this device.')}
@@ -3585,6 +3672,14 @@ function mount(ctx) {
   document.getElementById('retune').onclick = () => actions.retune();
   document.getElementById('backup').onclick = () => actions.exportBackup();
   document.getElementById('restore').onclick = () => actions.restoreBackup();
+  wireWorks(document.getElementById('saved-grid'), savedWorks());
+  const seeSaved = document.getElementById('see-saved');
+  if (seeSaved) {
+    seeSaved.onclick = () => {
+      state.feed.filter = 'saved';
+      ctx.go('explore');
+    };
+  }
 }
 
 return { html, mount };
@@ -3615,9 +3710,15 @@ function html(ctx) {
   const body = `
     <div class="pane">
       <p class="eyebrow">Explore</p>
-      <h1 class="display">Every question, and the colour it brings.</h1>
-      <p class="prose-sm">${days.length} questions so far. One arrives each day. Each study is painted on your device from that day’s pigment.</p>
-      <div id="collection" class="stack-sm"></div>
+      <h1 class="display">${APP.hosted ? 'Paintings, sorted by colour.' : 'Every question, and the colour it brings.'}</h1>
+      ${
+        APP.hosted
+          ? `<p class="prose-sm">Public-domain works from the Met’s open collection, measured for colour on this device. Tap one for its source, or to save it.</p>
+             ${feedFilters()}
+             <div id="collection"></div>
+             <p class="kicker muted">The ${days.length} questions, painted here</p>`
+          : `<p class="prose-sm">${days.length} questions so far. One arrives each day. Each study is painted on your device from that day’s pigment.</p>`
+      }
       <div class="feed">${cards}</div>
     </div>`;
 
@@ -3628,6 +3729,12 @@ function html(ctx) {
 // feed is all image and nothing is downloaded.
 function mount() {
   mountCollection();
+  for (const button of document.querySelectorAll('[data-filter]')) {
+    button.onclick = () => {
+      state.feed.filter = button.dataset.filter;
+      render();
+    };
+  }
   const marks = ['wash', 'line', 'wash', 'grain'];
   document.querySelectorAll('canvas[data-study]').forEach((canvas, i) => {
     const day = dayById[canvas.dataset.study];
@@ -3908,6 +4015,56 @@ const PLACES = {
   chicago: ['Chicago', 41.88, -87.63, 'America/Chicago'],
   houston: ['Houston', 29.76, -95.37, 'America/Chicago'],
   dallas: ['Dallas', 32.78, -96.8, 'America/Chicago'],
+  boston: ['Boston', 42.36, -71.06, 'America/New_York'],
+  philadelphia: ['Philadelphia', 39.95, -75.17, 'America/New_York'],
+  charlotte: ['Charlotte', 35.23, -80.84, 'America/New_York'],
+  detroit: ['Detroit', 42.33, -83.05, 'America/Detroit'],
+  nashville: ['Nashville', 36.16, -86.78, 'America/Chicago'],
+  'new-orleans': ['New Orleans', 29.95, -90.07, 'America/Chicago'],
+  minneapolis: ['Minneapolis', 44.98, -93.27, 'America/Chicago'],
+  'st-louis': ['St. Louis', 38.63, -90.2, 'America/Chicago'],
+  phoenix: ['Phoenix', 33.45, -112.07, 'America/Phoenix'],
+  'las-vegas': ['Las Vegas', 36.17, -115.14, 'America/Los_Angeles'],
+  'san-francisco': ['San Francisco', 37.77, -122.42, 'America/Los_Angeles'],
+  'san-diego': ['San Diego', 32.72, -117.16, 'America/Los_Angeles'],
+  portland: ['Portland, Oregon', 45.52, -122.68, 'America/Los_Angeles'],
+  honolulu: ['Honolulu', 21.31, -157.86, 'Pacific/Honolulu'],
+  anchorage: ['Anchorage', 61.22, -149.9, 'America/Anchorage'],
+  vancouver: ['Vancouver', 49.28, -123.12, 'America/Vancouver'],
+  montreal: ['Montreal', 45.5, -73.57, 'America/Toronto'],
+  havana: ['Havana', 23.11, -82.37, 'America/Havana'],
+  kingston: ['Kingston, Jamaica', 17.97, -76.79, 'America/Jamaica'],
+  'san-juan': ['San Juan', 18.47, -66.11, 'America/Puerto_Rico'],
+  bogota: ['Bogotá', 4.71, -74.07, 'America/Bogota'],
+  lima: ['Lima', -12.05, -77.04, 'America/Lima'],
+  'buenos-aires': ['Buenos Aires', -34.6, -58.38, 'America/Argentina/Buenos_Aires'],
+  dublin: ['Dublin', 53.35, -6.26, 'Europe/Dublin'],
+  madrid: ['Madrid', 40.42, -3.7, 'Europe/Madrid'],
+  rome: ['Rome', 41.9, 12.5, 'Europe/Rome'],
+  amsterdam: ['Amsterdam', 52.37, 4.9, 'Europe/Amsterdam'],
+  stockholm: ['Stockholm', 59.33, 18.07, 'Europe/Stockholm'],
+  athens: ['Athens', 37.98, 23.73, 'Europe/Athens'],
+  istanbul: ['Istanbul', 41.01, 28.98, 'Europe/Istanbul'],
+  moscow: ['Moscow', 55.76, 37.62, 'Europe/Moscow'],
+  cairo: ['Cairo', 30.04, 31.24, 'Africa/Cairo'],
+  accra: ['Accra', 5.6, -0.19, 'Africa/Accra'],
+  nairobi: ['Nairobi', -1.29, 36.82, 'Africa/Nairobi'],
+  'addis-ababa': ['Addis Ababa', 9.03, 38.74, 'Africa/Addis_Ababa'],
+  dubai: ['Dubai', 25.2, 55.27, 'Asia/Dubai'],
+  tehran: ['Tehran', 35.69, 51.39, 'Asia/Tehran'],
+  karachi: ['Karachi', 24.86, 67.01, 'Asia/Karachi'],
+  delhi: ['Delhi', 28.61, 77.21, 'Asia/Kolkata'],
+  dhaka: ['Dhaka', 23.81, 90.41, 'Asia/Dhaka'],
+  bangkok: ['Bangkok', 13.76, 100.5, 'Asia/Bangkok'],
+  singapore: ['Singapore', 1.35, 103.82, 'Asia/Singapore'],
+  jakarta: ['Jakarta', -6.21, 106.85, 'Asia/Jakarta'],
+  manila: ['Manila', 14.6, 120.98, 'Asia/Manila'],
+  'hong-kong': ['Hong Kong', 22.32, 114.17, 'Asia/Hong_Kong'],
+  beijing: ['Beijing', 39.9, 116.41, 'Asia/Shanghai'],
+  shanghai: ['Shanghai', 31.23, 121.47, 'Asia/Shanghai'],
+  seoul: ['Seoul', 37.57, 126.98, 'Asia/Seoul'],
+  melbourne: ['Melbourne', -37.81, 144.96, 'Australia/Melbourne'],
+  auckland: ['Auckland', -36.85, 174.76, 'Pacific/Auckland'],
   denver: ['Denver', 39.74, -104.99, 'America/Denver'],
   'los-angeles': ['Los Angeles', 34.05, -118.24, 'America/Los_Angeles'],
   seattle: ['Seattle', 47.61, -122.33, 'America/Los_Angeles'],
@@ -4018,7 +4175,56 @@ function skyForDay(isoDay) {
     moon: signOf(Astronomy.EclipticGeoMoon(at).lon),
     phase: phaseName(angle),
     waxing: angle < 180,
+    angle,
   };
+}
+
+// The Moon as it is lit today. 0 is new, 180 is full; the lit side is on the
+// right while it waxes, as seen from the northern hemisphere.
+function moonSvg(angle, size = 44) {
+  const a = ((angle % 360) + 360) % 360;
+  const waxing = a <= 180;
+  const t = waxing ? a : 360 - a;
+  const rx = (Math.abs(Math.cos((t * Math.PI) / 180)) * 20).toFixed(2);
+  const lit = `M24 4A20 20 0 0 1 24 44A${rx} 20 0 0 ${t < 90 ? 0 : 1} 24 4Z`;
+  return `<svg class="moon" width="${size}" height="${size}" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="20" fill="#2A241D" stroke="#3A332A"/><path d="${lit}" fill="#EDE4D3"${
+    waxing ? '' : ' transform="translate(48 0) scale(-1 1)"'
+  }/></svg>`;
+}
+
+// How today's Moon sits against the person's own chart, said as a prompt for
+// making. It describes two positions and never what will happen.
+const KIN = { fire: 'air', air: 'fire', earth: 'water', water: 'earth' };
+
+function skyRelation(today, chart) {
+  if (!today || !chart) return '';
+  if (chart.sun.name === today.moon.name) return 'The Moon is in your Sun sign today. Work in your most familiar colour and look for what is new in it.';
+  if (chart.moon.name === today.moon.name) return 'The Moon is back in the sign it was in when you were born. Make something only you will see.';
+  const mine = chart.sun.element;
+  const theirs = today.moon.element;
+  if (mine === theirs) return `Today’s Moon and your Sun are both in ${mine} signs. Stay with what comes easily.`;
+  const a = (element) => (/^[aeiou]/.test(element) ? `an ${element}` : `a ${element}`);
+  if (KIN[mine] === theirs) return `Today’s Moon is in ${a(theirs)} sign and your Sun is in ${a(mine)} sign. Let one colour carry the other.`;
+  return `Today’s Moon is in ${a(theirs)} sign and your Sun is in ${a(mine)} sign. Put two colours side by side that you would not usually pair.`;
+}
+
+// Shown on Today while the lens is off, until the person hides it. It states
+// where the Moon is, which is the same for everyone, and asks for nothing.
+function skyInvite() {
+  if (skyOn() || !skyReady() || state.prefs.skyInvite === false) return '';
+  const today = skyForDay(state.day);
+  if (!today) return '';
+  return `<div class="sky-invite">
+      <a class="pigment-card sky-card" href="#sky">
+        ${moonSvg(today.angle)}
+        <span class="stack-xs">
+          <span class="eyebrow">Sky lens · off</span>
+          <span class="pigment-name">Moon in ${esc(today.moon.name)} today</span>
+          <span class="muted-sm">Turn the lens on for one colour and one line from today’s sky. Optional, and it predicts nothing.</span>
+        </span>
+      </a>
+      <button type="button" class="button plain" id="sky-hide">Hide this</button>
+    </div>`;
 }
 
 function skyOn() {
@@ -4039,19 +4245,17 @@ function skyCard() {
   const today = skyForDay(state.day);
   const chart = birthChart(state.prefs.sky);
   if (!today) return '';
-  let echo = '';
-  if (chart && chart.sun.name === today.moon.name) echo = ' The Moon is in your Sun sign today.';
-  else if (chart && chart.moon.name === today.moon.name) echo = ' The Moon is in the sign it was in when you were born.';
+  const relation = skyRelation(today, chart);
   const yours = chart
     ? `Your Sun in ${chart.sun.name}, Moon in ${chart.moon.name}${chart.rising ? `, ${chart.rising.name} rising` : ''}.`
     : 'Add your birth date to see your own signs.';
   return `<a class="pigment-card sky-card" href="#sky">
-      <span class="sky-moon" data-phase="${today.waxing ? 'waxing' : 'waning'}" aria-hidden="true"></span>
+      ${moonSvg(today.angle)}
       <span class="stack-xs">
         <span class="eyebrow">Sky lens · Sun in ${esc(today.sun.name)}</span>
         <span class="pigment-name">Moon in ${esc(today.moon.name)}, ${esc(today.phase)}</span>
-        <span class="muted-sm">${esc(ELEMENTS[today.moon.element].line)}${esc(echo)}</span>
-        <span class="muted-sm">${esc(yours)}</span>
+        <span class="muted-sm">${esc(ELEMENTS[today.moon.element].line)}</span>
+        <span class="muted-sm">${esc(relation || yours)}</span>
       </span>
     </a>`;
 }
@@ -4083,31 +4287,57 @@ const skyView = (() => {
       .map(([key, place]) => `<option value="${esc(key)}"${sky.place === key ? ' selected' : ''}>${esc(place[0])}</option>`)
       .join('');
 
+    const today = skyForDay(ctx.state.day);
+    const tint = today ? pigments[ELEMENTS[today.moon.element].pigment] : null;
+    const relation = skyRelation(today, chart);
+    const sorted = Object.entries(PLACES).sort((a, b) => a[1][0].localeCompare(b[1][0]));
+    const options = sorted
+      .map(([key, place]) => `<option value="${esc(key)}"${sky.place === key ? ' selected' : ''}>${esc(place[0])}</option>`)
+      .join('');
+
+    const head = today
+      ? `<div class="sky-hero">
+            ${moonSvg(today.angle, 104)}
+            <h1 class="display">Moon in ${esc(today.moon.name)}.</h1>
+          </div>
+          <div class="sky-facts">
+            <span class="sky-fact"><span class="mono-sm">Phase</span><strong>${esc(sentenceCase(today.phase))}</strong></span>
+            <span class="sky-fact"><span class="mono-sm">Sun</span><strong>${esc(today.sun.name)}</strong></span>
+            <span class="sky-fact"><span class="mono-sm">Element</span><strong>${esc(sentenceCase(today.moon.element))}</strong></span>
+          </div>
+          <p class="sky-line">${esc(ELEMENTS[today.moon.element].line)}</p>
+          ${relation && sky.on ? `<p class="prose-sm">${esc(relation)}</p>` : ''}
+          ${
+            tint
+              ? `<div class="chips tight">${pigmentChip(tint)}<span class="muted-sm">${
+                  sky.on ? 'added to today’s palette' : 'is the colour the lens would add today'
+                }</span></div>`
+              : ''
+          }
+          ${APP.hosted ? '<button type="button" class="button ghost" id="sky-feed">See paintings in today’s sky colour</button>' : ''}`
+      : '<h1 class="display-sm">The sky cannot be worked out in this browser.</h1><p class="muted-sm">The astronomy library did not load, so the lens cannot run.</p>';
+
     const body = `
-      <header class="bar">
-        <div class="row-between">
-          ${backLink('world', 'Back to My World')}
-          <span class="eyebrow">Sky lens · optional</span>
-          <span class="bar-spacer"></span>
-        </div>
-      </header>
-
       <div class="pane">
-        <h1 class="display-sm">${sky.on ? 'The sky lens is on.' : 'The sky lens is off.'}</h1>
-        <p class="prose-sm">When it is on, the sign the Moon is in today adds one colour to your palette and one line to your day. It is a lens for making, not a forecast. Your birth details stay on this device and the chart is calculated here.</p>
-        ${skyReady() ? '' : '<p class="muted-sm">The astronomy library did not load in this browser, so the lens cannot run.</p>'}
+        <p class="eyebrow">Sky · ${esc(formatDay(ctx.state.day, { weekday: 'long', month: 'short', day: 'numeric' }))}</p>
+        ${head}
 
-        <button type="button" id="sky-toggle" class="button ${sky.on ? 'ghost' : 'primary'}" aria-pressed="${sky.on}">${
-          sky.on ? 'Turn the lens off' : 'Turn the lens on'
-        }</button>
+        <section class="panel">
+          <p class="kicker muted">The lens · ${sky.on ? 'on' : 'off'}</p>
+          <p class="prose-sm">When it is on, the sign the Moon is in adds one colour to your palette and one line to Today, and your own chart shapes that line. It is a lens for making, not a forecast. Your birth details stay on this device and the chart is calculated here.</p>
+          <button type="button" id="sky-toggle" class="button ${sky.on ? 'ghost' : 'primary'}" aria-pressed="${sky.on}"${skyReady() ? '' : ' disabled'}>${
+            sky.on ? 'Turn the lens off' : 'Turn the lens on'
+          }</button>
+        </section>
 
         <div class="stack-sm">
-          <label class="field"><span class="kicker muted">Birth date</span>
+          <p class="kicker muted">Your birth details</p>
+          <label class="field"><span class="muted-sm">Birth date</span>
             <input type="date" id="sky-date" value="${esc(sky.date)}" min="1900-01-01" max="${esc(ctx.state.day)}"></label>
-          <label class="field"><span class="kicker muted">Birth time, if you know it</span>
+          <label class="field"><span class="muted-sm">Birth time, if you know it</span>
             <input type="time" id="sky-time" value="${esc(sky.time)}"></label>
-          <label class="field"><span class="kicker muted">Nearest city to where you were born</span>
-            <select id="sky-place"><option value="">Not sure, or not listed</option>${places}</select></label>
+          <label class="field"><span class="muted-sm">Nearest city to where you were born</span>
+            <select id="sky-place"><option value="">Not sure, or not listed</option>${options}</select></label>
           <p class="muted-sm">A date alone gives your Sun sign. A time settles the Moon. A time and a city give your rising sign.</p>
         </div>
 
@@ -4119,7 +4349,7 @@ const skyView = (() => {
         }
       </div>`;
 
-    return screen({ route: 'world', body });
+    return screen({ route: 'sky', body });
   }
 
   function mount(ctx) {
@@ -4129,6 +4359,13 @@ const skyView = (() => {
     document.getElementById('sky-date').onchange = (event) => save({ date: event.target.value });
     document.getElementById('sky-time').onchange = (event) => save({ time: event.target.value });
     document.getElementById('sky-place').onchange = (event) => save({ place: event.target.value });
+    const feed = document.getElementById('sky-feed');
+    if (feed) {
+      feed.onclick = () => {
+        state.feed.filter = 'sky';
+        ctx.go('explore');
+      };
+    }
   }
 
   return { html, mount };
@@ -4166,6 +4403,12 @@ function dailySuggestion() {
     return `You have not tried a wander yet. Today’s takes ${day.ways.wander.minutes} minutes, outside.`;
   }
   return `Today’s read takes ${day.ways.read.minutes} minutes. The reflection can be one line.`;
+}
+
+// Notes: anything written outside the day's question. Kept with the other
+// preferences, so a backup carries them.
+function journalNotes() {
+  return (Array.isArray(state.prefs.notes) ? state.prefs.notes : []).filter((n) => n && typeof n.text === 'string' && ISO_DAY.test(n.day || ''));
 }
 
 function journalPatterns() {
@@ -4210,8 +4453,7 @@ const journalView = (() => {
     const entries = journalEntries();
     const patterns = journalPatterns();
 
-    const list = entries
-      .map((p) => {
+    const entryHtml = (p) => {
         const words = (p.feelings || [])
           .map((id) => feelings.find((f) => f.id === id))
           .filter(Boolean)
@@ -4234,18 +4476,39 @@ const journalView = (() => {
           ${words || colour ? `<div class="chips tight">${words}${colour}</div>` : ''}
           ${link}
         </article>`;
-      })
+    };
+    const noteHtml = (n) => `<article class="entry note">
+          <p class="eyebrow">${esc(formatDay(n.day, { weekday: 'short', month: 'short', day: 'numeric' }))} · note</p>
+          <p class="entry-text">${esc(n.text)}</p>
+          <button type="button" class="button plain" data-note-remove="${esc(String(n.id))}">Remove this note</button>
+        </article>`;
+
+    const notes = journalNotes();
+    const list = [
+      ...entries.map((p) => ({ day: p.day, at: Number.MAX_SAFE_INTEGER, html: entryHtml(p) })),
+      ...notes.map((n) => ({ day: n.day, at: Number(n.at) || 0, html: noteHtml(n) })),
+    ]
+      .sort((a, b) => b.day.localeCompare(a.day) || b.at - a.at)
+      .map((item) => item.html)
       .join('');
 
     const body = `
       <div class="pane">
         <p class="eyebrow private">${icon('lock', 'icon-sm')} Journal · only you see this</p>
-        <h1 class="display">${entries.length ? 'What you have kept.' : 'Nothing written yet.'}</h1>
+        <h1 class="display">${entries.length || notes.length ? 'What you have kept.' : 'Nothing written yet.'}</h1>
 
         <section class="panel">
           <p class="kicker muted">A suggestion for today</p>
           <p class="quote plain">${esc(dailySuggestion())}</p>
           <a class="button primary" href="#reflect">${state.piece && state.piece.response ? 'Open today’s entry' : 'Write today’s entry'}</a>
+        </section>
+
+        <section class="panel">
+          <label class="kicker muted" for="note-text">A note, any time</label>
+          <textarea id="note-text" class="note-input" maxlength="2000"
+            placeholder="A thought, a colour you saw, a line you overheard.">${esc(state.noteDraft)}</textarea>
+          <button type="button" id="note-keep" class="button ghost">Keep this note</button>
+          <p class="muted-sm">Notes are stored on this device, beside your entries.</p>
         </section>
 
         <section class="panel">
@@ -4273,6 +4536,28 @@ const journalView = (() => {
     if (on) on.onclick = () => ctx.actions.setPref('ai', true);
     if (off) off.onclick = () => ctx.actions.setPref('ai', false);
     if (ask) ask.onclick = () => aiAsk();
+
+    const field = document.getElementById('note-text');
+    field.oninput = () => {
+      state.noteDraft = field.value;
+    };
+    document.getElementById('note-keep').onclick = () => {
+      const text = field.value.trim().slice(0, 2000);
+      if (!text) {
+        field.focus();
+        return;
+      }
+      state.noteDraft = '';
+      const note = { id: newId(), day: localDay(), at: Date.now(), text };
+      ctx.actions.setPref('notes', [note, ...journalNotes()].slice(0, 300));
+    };
+    for (const button of document.querySelectorAll('[data-note-remove]')) {
+      button.onclick = async () => {
+        const sure = await askDialog({ title: 'Remove this note?', body: 'It is deleted from this device.', confirm: 'Remove', cancel: 'Keep it' });
+        if (sure === false) return;
+        ctx.actions.setPref('notes', journalNotes().filter((n) => String(n.id) !== button.dataset.noteRemove));
+      };
+    }
   }
 
   return { html, mount };
@@ -4299,15 +4584,21 @@ const AI_BRIEF = [
 const ai = { ready: null, handle: null, busy: false, denied: false, error: '' };
 
 function aiEntries() {
-  return journalEntries()
-    .slice(0, AI_ENTRIES)
-    .map((p) => ({
-      day: p.day,
-      question: String(p.question || '').slice(0, 200),
-      text: String(p.response || '').slice(0, 1200),
-      feelings: (p.feelings || []).slice(0, 6).map((id) => (feelings.find((f) => f.id === id) || { label: id }).label),
-      colour: p.colour && pigments[p.colour] ? pigments[p.colour].name : '',
-    }));
+  const entries = journalEntries().map((p) => ({
+    day: p.day,
+    question: String(p.question || '').slice(0, 200),
+    text: String(p.response || '').slice(0, 1200),
+    feelings: (p.feelings || []).slice(0, 6).map((id) => (feelings.find((f) => f.id === id) || { label: id }).label),
+    colour: p.colour && pigments[p.colour] ? pigments[p.colour].name : '',
+  }));
+  const notes = journalNotes().map((n) => ({
+    day: n.day,
+    question: 'A free note, not an answer to a question',
+    text: n.text.slice(0, 1200),
+    feelings: [],
+    colour: '',
+  }));
+  return [...entries, ...notes].sort((a, b) => b.day.localeCompare(a.day)).slice(0, AI_ENTRIES);
 }
 
 function aiPrompt(entries) {
@@ -4377,11 +4668,11 @@ async function aiAsk() {
 
 function aiPanel() {
   if (!ai.ready) return '';
-  const count = Math.min(journalEntries().length, AI_ENTRIES);
+  const count = aiEntries().length;
   if (!state.prefs.ai) {
     return `<section class="panel">
       <p class="kicker muted">A reflection from Claude · off</p>
-      <p class="prose-sm">If you turn this on and press the button, your ${AI_ENTRIES} most recent entries are sent to Claude, an AI model, which writes a short reflection back. Nothing is sent until you ask.</p>
+      <p class="prose-sm">If you turn this on and press the button, your ${AI_ENTRIES} most recent entries and notes are sent to Claude, an AI model, which writes a short reflection back. Nothing is sent until you ask.</p>
       <button type="button" id="ai-on" class="button ghost">Turn on AI reflections</button>
     </section>`;
   }
@@ -4397,9 +4688,9 @@ function aiPanel() {
     ${ai.error ? `<p class="muted-sm" role="status">${esc(ai.error)}</p>` : ''}
     ${
       ai.denied || !count
-        ? `<p class="muted-sm">${count ? '' : 'Write an entry first.'}</p>`
+        ? `<p class="muted-sm">${count ? '' : 'Write an entry or a note first.'}</p>`
         : `<button type="button" id="ai-ask" class="button primary"${ai.busy ? ' disabled' : ''}>${ai.busy ? 'Writing…' : 'Ask for a reflection'}</button>
-           <p class="muted-sm">Pressing this sends your ${count} most recent ${count === 1 ? 'entry' : 'entries'} to Claude.</p>`
+           <p class="muted-sm">Pressing this sends your ${count} most recent ${count === 1 ? 'entry or note' : 'entries and notes'} to Claude.</p>`
     }
     <button type="button" id="ai-off" class="button ghost">Turn AI reflections off</button>
   </section>`;
@@ -4456,83 +4747,388 @@ function wireDictation(field) {
 
 const MET = 'https://collectionapi.metmuseum.org/public/collection/v1';
 
-function colourWord(hex) {
-  const n = parseInt(hex.slice(1), 16);
-  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => v / 255);
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  if (max - min < 0.12) return max > 0.6 ? 'white' : 'night';
-  let hue = max === r ? ((g - b) / (max - min)) % 6 : max === g ? (b - r) / (max - min) + 2 : (r - g) / (max - min) + 4;
-  hue = (hue * 60 + 360) % 360;
-  if (hue < 20 || hue >= 330) return 'red';
-  if (hue < 45) return 'autumn';
-  if (hue < 70) return 'yellow';
-  if (hue < 170) return 'green';
-  if (hue < 260) return 'blue';
+// Colour families. A pixel belongs to exactly one, so a painting can be
+// scored for how much of it is, say, green, and a pigment maps to the same
+// family its own colour falls in.
+const CATS = {
+  red: { label: 'Red', hex: '#B5382A', words: ['red'] },
+  gold: { label: 'Gold', hex: '#D9A93B', words: ['yellow', 'gold'] },
+  green: { label: 'Green', hex: '#3D6A58', words: ['green'] },
+  blue: { label: 'Blue', hex: '#2F4E8C', words: ['blue'] },
+  violet: { label: 'Violet', hex: '#6B4A7E', words: ['violet', 'purple'] },
+  earth: { label: 'Earth', hex: '#7A5230', words: ['autumn', 'brown'] },
+  night: { label: 'Night', hex: '#16161D', words: ['night', 'moonlight'] },
+  light: { label: 'Light', hex: '#E9E2D2', words: ['white', 'snow'] },
+};
+const ELEMENT_CAT = { fire: 'red', earth: 'earth', air: 'gold', water: 'blue' };
+
+function catOf(r, g, b) {
+  const max = Math.max(r, g, b) / 255;
+  const min = Math.min(r, g, b) / 255;
+  const l = (max + min) / 2;
+  const c = max - min;
+  if (l < 0.16) return 'night';
+  if (c < 0.1) return l > 0.7 ? 'light' : l < 0.3 ? 'night' : 'grey';
+  if (l > 0.78 && c < 0.25) return 'light';
+  let h = max === r / 255 ? ((g - b) / 255 / c) % 6 : max === g / 255 ? (b - r) / 255 / c + 2 : (r - g) / 255 / c + 4;
+  h = (h * 60 + 360) % 360;
+  if (h < 18 || h >= 335) return 'red';
+  if (h < 48) return l < 0.5 || c < 0.35 ? 'earth' : 'gold';
+  if (h < 70) return l < 0.35 ? 'earth' : 'gold';
+  if (h < 170) return 'green';
+  if (h < 255) return 'blue';
   return 'violet';
 }
 
-async function loadCollection(word) {
-  const key = `${APP.storage}:met:${word}`;
-  try {
-    const cached = JSON.parse(sessionStorage.getItem(key));
-    if (Array.isArray(cached)) return cached;
-  } catch {
-    // No usable cache; fetch again.
+function catForHex(hex) {
+  const { r, g, b } = hexToRgb(hex);
+  const cat = catOf(r, g, b);
+  return CATS[cat] ? cat : 'earth';
+}
+
+const toHex = (r, g, b) => `#${[r, g, b].map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')}`;
+
+// Reads an image's colours on this device: what share of it falls in each
+// family, and the five colours that cover most of it. The museum's image
+// server only allows pixels to be read on a copy asked for with its own query
+// string, so measured works are shown from that same copy and nothing is
+// downloaded twice. If that ever stops working the feed still shows, unsorted.
+function workImg(item, attrs = '') {
+  const measured = Boolean(item.mix);
+  return `<img src="${esc(measured ? `${item.image}?iw=1` : item.image)}"${measured ? ' crossorigin="anonymous"' : ''} data-plain="${esc(item.image)}" referrerpolicy="no-referrer"${
+    item.w && item.h ? ` width="${Math.round(item.w)}" height="${Math.round(item.h)}"` : ''
+  } alt="${esc(item.title)}, ${esc(item.artist)}"${attrs}>`;
+}
+
+function guardImages(container) {
+  for (const img of container.querySelectorAll('img[data-plain]')) {
+    img.addEventListener(
+      'error',
+      () => {
+        if (img.getAttribute('src') === img.dataset.plain) return;
+        img.removeAttribute('crossorigin');
+        img.src = img.dataset.plain;
+      },
+      { once: true },
+    );
   }
-  // Search moved to v1.1 (paged) in October 2026; single objects are still served from v1.
-  const search = await fetch(`${MET}.1/search?hasImages=true&medium=Paintings&limit=18&offset=0&q=${encodeURIComponent(word)}`).then((r) => r.json());
-  const ids = (Array.isArray(search.objectIDs) ? search.objectIDs : []).filter(Number.isInteger).slice(0, 18);
-  const objects = await Promise.all(
-    ids.map((id) =>
-      fetch(`${MET}/objects/${id}`)
-        .then((r) => (r.ok ? r.json() : null))
-        .catch(() => null),
-    ),
+}
+
+function measure(url) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const timer = setTimeout(() => resolve(null), 12000);
+    img.crossOrigin = 'anonymous';
+    img.referrerPolicy = 'no-referrer';
+    img.onerror = () => {
+      clearTimeout(timer);
+      resolve(null);
+    };
+    img.onload = () => {
+      clearTimeout(timer);
+      try {
+        const size = 28;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const context = canvas.getContext('2d', { willReadFrequently: true });
+        context.drawImage(img, 0, 0, size, size);
+        const data = context.getImageData(0, 0, size, size).data;
+        const mix = {};
+        const buckets = new Map();
+        const total = size * size;
+        for (let i = 0; i < data.length; i += 4) {
+          const [r, g, b] = [data[i], data[i + 1], data[i + 2]];
+          const cat = catOf(r, g, b);
+          mix[cat] = (mix[cat] || 0) + 1 / total;
+          const key = (r >> 5) * 64 + (g >> 5) * 8 + (b >> 5);
+          const bucket = buckets.get(key) || [0, 0, 0, 0];
+          bucket[0] += 1;
+          bucket[1] += r;
+          bucket[2] += g;
+          bucket[3] += b;
+          buckets.set(key, bucket);
+        }
+        for (const key of Object.keys(mix)) mix[key] = Math.round(mix[key] * 1000) / 1000;
+        const palette = [];
+        for (const [n, r, g, b] of [...buckets.values()].sort((a, b2) => b2[0] - a[0])) {
+          const colour = [r / n, g / n, b / n];
+          if (palette.every((p) => Math.abs(p[0] - colour[0]) + Math.abs(p[1] - colour[1]) + Math.abs(p[2] - colour[2]) > 70)) palette.push(colour);
+          if (palette.length === 5) break;
+        }
+        resolve({
+          mix,
+          palette: palette.map((p) => toHex(p[0], p[1], p[2])),
+          w: img.naturalWidth,
+          h: img.naturalHeight,
+        });
+      } catch {
+        resolve(null);
+      }
+    };
+    img.src = url;
+  });
+}
+
+// Every work seen this session, by museum id. A work found under one colour
+// word can rank under another once it has been measured.
+const met = { pool: new Map(), loaded: new Set(), loading: new Map() };
+
+function loadFamily(cat) {
+  if (met.loaded.has(cat)) return Promise.resolve();
+  if (met.loading.has(cat)) return met.loading.get(cat);
+  const job = (async () => {
+    const key = `${APP.storage}:met3:${cat}`;
+    let items = null;
+    try {
+      const cached = JSON.parse(sessionStorage.getItem(key));
+      if (Array.isArray(cached) && cached.length) items = cached;
+    } catch {
+      // No usable cache; fetch again.
+    }
+    if (!items) {
+      // Search moved to v1.1 (paged) in October 2026; single objects are still served from v1.
+      const lists = await Promise.all(
+        CATS[cat].words.map((word) =>
+          fetch(`${MET}.1/search?hasImages=true&medium=Paintings&limit=40&offset=0&q=${encodeURIComponent(word)}`)
+            .then((r) => r.json())
+            .then((found) => (Array.isArray(found.objectIDs) ? found.objectIDs.filter(Number.isInteger) : []))
+            .catch(() => []),
+        ),
+      );
+      const ids = [];
+      for (let i = 0; i < 40; i += 1) for (const list of lists) if (list[i] != null && !ids.includes(list[i])) ids.push(list[i]);
+      const objects = await Promise.all(
+        ids.slice(0, 56).map((id) =>
+          fetch(`${MET}/objects/${id}`)
+            .then((r) => (r.ok ? r.json() : null))
+            .catch(() => null),
+        ),
+      );
+      const found = objects
+        .filter((o) => o && o.isPublicDomain === true && /^https:\/\/images\.metmuseum\.org\//.test(o.primaryImageSmall || ''))
+        .map((o) => ({
+          id: o.objectID,
+          from: cat,
+          title: String(o.title || 'Untitled').slice(0, 120),
+          artist: String(o.artistDisplayName || 'Unknown maker').slice(0, 80),
+          date: String(o.objectDate || '').slice(0, 40),
+          medium: String(o.medium || '').slice(0, 90),
+          image: o.primaryImageSmall,
+          url: /^https:\/\/www\.metmuseum\.org\//.test(o.objectURL || '') ? o.objectURL : 'https://www.metmuseum.org/art/collection',
+        }));
+      items = await Promise.all(found.map(async (item) => ({ ...item, ...((await measure(`${item.image}?iw=1`)) || {}) })));
+      try {
+        sessionStorage.setItem(key, JSON.stringify(items));
+      } catch {
+        // Storage full or blocked; the feed still shows.
+      }
+    }
+    for (const item of items) if (!met.pool.has(item.id)) met.pool.set(item.id, item);
+    if (items.length) met.loaded.add(cat);
+  })().finally(() => met.loading.delete(cat));
+  met.loading.set(cat, job);
+  return job;
+}
+
+// The works that are most this colour, strongest first. Unmeasured works
+// found under this colour's own words fill in if too few were measured.
+function ranked(cat, n = 18) {
+  const all = [...met.pool.values()];
+  const strong = all
+    .filter((item) => item.mix && (item.mix[cat] || 0) >= 0.05)
+    .sort((a, b) => b.mix[cat] - a.mix[cat])
+    .slice(0, n);
+  if (strong.length >= 6) return strong;
+  const rest = all.filter((item) => item.from === cat && !strong.includes(item));
+  return [...strong, ...rest].slice(0, n);
+}
+
+function savedWorks() {
+  return (Array.isArray(state.prefs.saved) ? state.prefs.saved : []).filter(
+    (w) => w && /^https:\/\/images\.metmuseum\.org\//.test(w.image || '') && /^https:\/\/www\.metmuseum\.org\//.test(w.url || ''),
   );
-  const items = objects
-    .filter((o) => o && o.isPublicDomain === true && /^https:\/\/images\.metmuseum\.org\//.test(o.primaryImageSmall || ''))
-    .slice(0, 8)
-    .map((o) => ({
-      title: String(o.title || 'Untitled').slice(0, 120),
-      artist: String(o.artistDisplayName || 'Unknown maker').slice(0, 80),
-      date: String(o.objectDate || '').slice(0, 40),
-      image: o.primaryImageSmall,
-      url: /^https:\/\/www\.metmuseum\.org\//.test(o.objectURL || '') ? o.objectURL : 'https://www.metmuseum.org/art/collection',
-    }));
-  try {
-    sessionStorage.setItem(key, JSON.stringify(items));
-  } catch {
-    // Storage full or blocked; the feed still shows.
+}
+
+function toggleSaved(item) {
+  const saved = savedWorks();
+  const next = saved.some((w) => w.id === item.id)
+    ? saved.filter((w) => w.id !== item.id)
+    : [
+        {
+          id: item.id,
+          title: item.title,
+          artist: item.artist,
+          date: item.date,
+          medium: item.medium || '',
+          image: item.image,
+          url: item.url,
+          palette: (item.palette || []).filter((hex) => /^#[0-9a-f]{6}$/i.test(hex)).slice(0, 5),
+          w: item.w || 0,
+          h: item.h || 0,
+        },
+        ...saved,
+      ].slice(0, 80);
+  return ctx.actions.setPref('saved', next);
+}
+
+function workTiles(items) {
+  const kept = new Set(savedWorks().map((w) => w.id));
+  return items
+    .map(
+      (item) => `<button type="button" class="tile work" data-work="${esc(String(item.id))}">
+          ${workImg(item, ' loading="lazy"')}
+          <span class="tile-text">
+            <span class="tile-title">${esc(item.title)}</span>
+            <span class="mono-sm">${esc(item.artist)}${item.date ? `, ${esc(item.date)}` : ''}${kept.has(item.id) ? ' · saved' : ''}</span>
+          </span>
+        </button>`,
+    )
+    .join('');
+}
+
+function wireWorks(container, items) {
+  if (!container) return;
+  guardImages(container);
+  for (const button of container.querySelectorAll('[data-work]')) {
+    const item = items.find((w) => String(w.id) === button.dataset.work);
+    if (item) button.onclick = () => openWork(item);
   }
-  return items;
+}
+
+// One work, larger, with where it came from. The source link is always here.
+function openWork(item) {
+  const dialog = document.getElementById('work');
+  const draw = () => {
+    const saved = savedWorks().some((w) => w.id === item.id);
+    const palette = (item.palette || []).filter((hex) => /^#[0-9a-f]{6}$/i.test(hex));
+    dialog.innerHTML = `
+      <button type="button" class="dialog-close" id="work-close" aria-label="Close">&times;</button>
+      <p class="eyebrow">The Met · public domain</p>
+      ${workImg(item, ' class="work-image"')}
+      <h2 id="work-title">${esc(item.title)}</h2>
+      <p>${esc(item.artist)}${item.date ? `, ${esc(item.date)}` : ''}${item.medium ? `<br>${esc(item.medium)}` : ''}</p>
+      ${
+        palette.length
+          ? `<div class="work-palette" role="img" aria-label="The main colours in this image">${palette
+              .map((hex) => `<span data-css="background:${esc(hex)}"></span>`)
+              .join('')}</div>
+             <p class="muted-sm">The main colours in this image, measured on this device.</p>`
+          : ''
+      }
+      <div class="dialog-actions">
+        <button type="button" class="button ${saved ? 'ghost' : 'primary'}" id="work-save" aria-pressed="${saved}">${saved ? 'Saved · remove' : 'Save to My World'}</button>
+        <a class="button ghost" href="${esc(item.url)}" target="_blank" rel="noopener noreferrer">View at The Met</a>
+      </div>`;
+    applyDynamicStyles(dialog);
+    guardImages(dialog);
+    document.getElementById('work-close').onclick = () => dialog.close();
+    document.getElementById('work-save').onclick = async () => {
+      await toggleSaved(item);
+      draw();
+    };
+  };
+  draw();
+  if (!dialog.open) dialog.showModal();
+}
+
+// What the feed is filtered by: today's pigment, today's Moon, a colour
+// family, or what the person saved.
+function feedFamily(filter) {
+  if (CATS[filter]) return filter;
+  if (filter === 'sky') {
+    const today = skyForDay(state.day);
+    if (today) return ELEMENT_CAT[today.moon.element];
+  }
+  return catForHex(pigments[state.content.pigment].hex);
+}
+
+function feedFilters() {
+  const current = state.feed.filter;
+  const pill = (id, label, hex) =>
+    `<button type="button" class="pill" data-filter="${esc(id)}" aria-pressed="${current === id}">${
+      hex ? `<span class="dot" data-css="background:${esc(hex)}"></span>` : ''
+    }${esc(label)}</button>`;
+  const pigment = pigments[state.content.pigment];
+  const today = skyReady() ? skyForDay(state.day) : null;
+  const saved = savedWorks().length;
+  return `<div class="filters" role="group" aria-label="Choose what the feed shows">
+      ${pill('today', `Today · ${pigment.name}`, pigment.hex)}
+      ${today ? pill('sky', `Moon in ${today.moon.name}`, CATS[ELEMENT_CAT[today.moon.element]].hex) : ''}
+      ${Object.entries(CATS)
+        .map(([id, cat]) => pill(id, cat.label, cat.hex))
+        .join('')}
+      ${pill('saved', `Saved${saved ? ` · ${saved}` : ''}`, '')}
+    </div>`;
 }
 
 async function mountCollection() {
   const holder = document.getElementById('collection');
   if (!holder || !APP.hosted) return;
-  const word = colourWord(pigments[state.content.pigment].hex);
-  let items = [];
-  try {
-    items = await loadCollection(word);
-  } catch {
-    items = [];
+  const filter = state.feed.filter;
+  const show = (items, empty) => {
+    holder.innerHTML = items.length ? `<div class="feed">${workTiles(items)}</div>` : `<p class="muted-sm feed-note" role="status">${esc(empty)}</p>`;
+    wireWorks(holder, items);
+  };
+  if (filter === 'saved') {
+    show(savedWorks(), 'Nothing saved yet. Open a painting and press Save.');
+    return;
   }
-  if (!holder.isConnected || !items.length) return;
-  holder.innerHTML = `<p class="kicker muted">From the Met’s open collection · ${esc(word)}</p>
-    <div class="feed">${items
-      .map(
-        (item) => `<a class="tile" href="${esc(item.url)}" target="_blank" rel="noopener noreferrer">
-          <img src="${esc(item.image)}" alt="${esc(item.title)}, ${esc(item.artist)}" loading="lazy" referrerpolicy="no-referrer">
-          <span class="tile-text">
-            <span class="tile-title">${esc(item.title)}</span>
-            <span class="mono-sm">${esc(item.artist)}${item.date ? `, ${esc(item.date)}` : ''}</span>
-            <span class="mono-sm">The Met · public domain</span>
-          </span>
-        </a>`,
-      )
-      .join('')}</div>
-    <p class="kicker muted">Painted here</p>`;
+  const family = feedFamily(filter);
+  if (!met.loaded.has(family)) {
+    holder.innerHTML = '<p class="muted-sm feed-note" role="status">Gathering paintings and measuring their colour…</p>';
+    try {
+      await loadFamily(family);
+    } catch {
+      // Shown as an empty feed below.
+    }
+    if (!holder.isConnected || state.feed.filter !== filter) return;
+  }
+  show(ranked(family), 'The museum did not answer just now. Try again in a moment.');
+}
+
+// One painting for the day, chosen by colour: the colour the person picked
+// most recently, or today's pigment if they have not picked one.
+function artBasis() {
+  const recent = journalEntries().find((p) => p.colour && pigments[p.colour]);
+  if (recent) {
+    const name = pigments[recent.colour].name.toLowerCase();
+    return {
+      pigment: pigments[recent.colour],
+      why: recent.day === state.day ? `Chosen for the colour you picked today, ${name}.` : `Chosen for the colour you picked on ${formatDay(recent.day)}, ${name}.`,
+    };
+  }
+  const pigment = pigments[state.content.pigment];
+  return { pigment, why: `Chosen for today’s pigment, ${pigment.name.toLowerCase()}.` };
+}
+
+async function mountDailyArt() {
+  const holder = document.getElementById('daily-art');
+  if (!holder || !APP.hosted) return;
+  const basis = artBasis();
+  const family = catForHex(basis.pigment.hex);
+  try {
+    await loadFamily(family);
+  } catch {
+    // Handled as no painting below.
+  }
+  if (!holder.isConnected) return;
+  const top = ranked(family, 6);
+  if (!top.length) {
+    holder.innerHTML = '';
+    return;
+  }
+  const item = top[Number(state.day.replace(/-/g, '')) % top.length];
+  holder.innerHTML = `<button type="button" class="art-card" data-work="${esc(String(item.id))}">
+      ${workImg(item)}
+      <span class="art-caption">
+        <span class="eyebrow">Art for today</span>
+        <span class="art-title">${esc(item.title)}</span>
+        <span class="mono-sm">${esc(item.artist)}${item.date ? `, ${esc(item.date)}` : ''} · The Met</span>
+        <span class="muted-sm">${esc(basis.why)}</span>
+      </span>
+    </button>`;
+  wireWorks(holder, [item]);
 }
 
 const VIEWS = {
@@ -4571,6 +5167,8 @@ const state = {
   pastChapters: [],
   thumbs: {},
   tune: { round: 0, index: 0, picks: [] },
+  feed: { filter: 'today' },
+  noteDraft: '',
 };
 
 // ── notices ──────────────────────────────────────────────────────────────
@@ -4730,6 +5328,8 @@ function ask({ title, body = '', confirm = 'OK', cancel = 'Cancel', input = null
     askEl.showModal();
   });
 }
+
+const askDialog = ask;
 
 const NUMBER_WORDS = ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
 
