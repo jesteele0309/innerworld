@@ -84,7 +84,7 @@ export async function POST(request) {
       headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 400,
+        max_tokens: 1200,
         messages: [
           { role: 'system', content: BRIEF },
           { role: 'user', content: `Entries, newest first:\n${lines.join('\n')}` },
@@ -103,7 +103,16 @@ export async function POST(request) {
   }
 
   const data = await upstream.json().catch(() => null);
-  const out = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-  if (typeof out !== 'string' || !out.trim()) return reply(502, { error: 'empty' });
+  const choice = data && data.choices && data.choices[0];
+  const content = choice && choice.message && choice.message.content;
+  // Some models return the answer as a list of parts instead of one string.
+  const out = Array.isArray(content)
+    ? content.map((part) => (part && typeof part.text === 'string' ? part.text : '')).join('')
+    : content;
+  if (typeof out !== 'string' || !out.trim()) {
+    // Shape only, never the words.
+    console.error(`ai gateway empty answer: finish=${choice && choice.finish_reason} content=${Array.isArray(content) ? 'list' : typeof content} usage=${JSON.stringify((data && data.usage) || {}).slice(0, 200)}`);
+    return reply(502, { error: 'empty', finish: (choice && choice.finish_reason) || null });
+  }
   return reply(200, { text: out.trim().slice(0, 1500) });
 }
