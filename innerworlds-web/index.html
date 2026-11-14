@@ -4480,7 +4480,8 @@ async function loadCollection(word) {
   } catch {
     // No usable cache; fetch again.
   }
-  const search = await fetch(`${MET}/search?hasImages=true&medium=Paintings&q=${encodeURIComponent(word)}`).then((r) => r.json());
+  // Search moved to v1.1 (paged) in October 2026; single objects are still served from v1.
+  const search = await fetch(`${MET}.1/search?hasImages=true&medium=Paintings&limit=18&offset=0&q=${encodeURIComponent(word)}`).then((r) => r.json());
   const ids = (Array.isArray(search.objectIDs) ? search.objectIDs : []).filter(Number.isInteger).slice(0, 18);
   const objects = await Promise.all(
     ids.map((id) =>
