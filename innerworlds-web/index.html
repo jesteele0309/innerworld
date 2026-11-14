@@ -3468,7 +3468,9 @@ function html(ctx) {
       <p class="eyebrow">${esc(formatDay(piece.day))} · Day ${dayNumber} of ${esc(state.chapter.title)}</p>
       <h1 class="display-sm" id="portrait-title">${esc(piece.title)}</h1>
       ${
-        piece.response
+        piece.painter === 'model' && piece.prompt
+          ? `<p class="prose-sm">Made by the AI Artist from your prompt: &ldquo;${esc(shorten(piece.prompt))}&rdquo;</p>`
+          : piece.response
           ? `<p class="prose-sm">From your words: &ldquo;${esc(shorten(piece.response))}&rdquo;${
               piece.feelings && piece.feelings.length ? ` Felt ${esc(piece.feelings.join(', '))}.` : ''
             }</p>`
