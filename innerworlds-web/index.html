@@ -886,6 +886,27 @@ a.button { text-decoration: none; }
 .tile-text { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px 12px; }
 .tile-title { font-family: var(--serif); font-size: 19px; line-height: 1.15; }
 
+/* ── wide screens ───────────────────────────────────────────────────────── */
+/* Explore is a wall of pictures, so on a desktop it takes the width. Every
+ * other screen is for reading and stays a single column. */
+
+@media (min-width: 860px) {
+  body[data-route="explore"] .masthead,
+  body[data-route="explore"] .screen { max-width: 1240px; }
+  body[data-route="explore"] .feed { columns: 3; column-gap: 14px; }
+  body[data-route="explore"] .tile { margin-bottom: 14px; }
+  body[data-route="explore"] .prose-sm { max-width: 560px; }
+  body[data-route="explore"] .filters { flex-wrap: wrap; overflow: visible; }
+  body[data-route="explore"] #feed-more { align-self: center; min-width: 280px; }
+  body[data-route="explore"] .tabs { grid-template-columns: repeat(5, 112px); justify-content: center; }
+}
+@media (min-width: 1080px) {
+  body[data-route="explore"] .feed { columns: 4; }
+}
+@media (min-width: 1320px) {
+  body[data-route="explore"] .feed { columns: 5; }
+}
+
 /* ── motion ─────────────────────────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: no-preference) {
@@ -4996,7 +5017,7 @@ function loadFamily(cat, more = false) {
 // The works that are most this colour, strongest first, from everything
 // gathered so far. If few are strongly that colour, the rest of what was
 // found under this family's own words follows, still in colour order.
-function ranked(cat, n = 24) {
+function ranked(cat, n = 40) {
   const share = (item) => (item.mix && item.mix[cat]) || 0;
   const all = [...met.pool.values()].sort((a, b) => share(b) - share(a));
   const strong = all.filter((item) => share(item) >= 0.05);
@@ -5541,6 +5562,7 @@ function render() {
   const changedScreen = lastRoute !== state.route;
   lastRoute = state.route;
 
+  document.body.dataset.route = state.route;
   main.innerHTML = view.html(ctx);
   applyDynamicStyles(main);
 
