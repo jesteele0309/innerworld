@@ -95,7 +95,12 @@ export async function POST(request) {
   } catch {
     return reply(502, { error: 'upstream' });
   }
-  if (!upstream.ok) return reply(upstream.status === 429 ? 429 : 502, { error: upstream.status === 429 ? 'rate_limited' : 'upstream' });
+  if (!upstream.ok) {
+    // The gateway's own error message, never the entries.
+    const why = await upstream.text().catch(() => '');
+    console.error(`ai gateway ${upstream.status}: ${why.slice(0, 300)}`);
+    return reply(upstream.status === 429 ? 429 : 502, { error: upstream.status === 429 ? 'rate_limited' : 'upstream', status: upstream.status });
+  }
 
   const data = await upstream.json().catch(() => null);
   const out = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
