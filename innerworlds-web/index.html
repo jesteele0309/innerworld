@@ -4879,11 +4879,12 @@ function loadFamily(cat) {
   if (met.loaded.has(cat)) return Promise.resolve();
   if (met.loading.has(cat)) return met.loading.get(cat);
   const job = (async () => {
-    const key = `${APP.storage}:met4:${cat}`;
+    // Kept for a week, so the museum is asked once and not on every visit.
+    const key = `${APP.storage}:met5:${cat}`;
     let items = null;
     try {
-      const cached = JSON.parse(sessionStorage.getItem(key));
-      if (Array.isArray(cached) && cached.length) items = cached;
+      const cached = JSON.parse(localStorage.getItem(key));
+      if (cached && Array.isArray(cached.items) && cached.items.length && Date.now() - cached.at < 7 * 86400000) items = cached.items;
     } catch {
       // No usable cache; fetch again.
     }
@@ -4899,19 +4900,31 @@ function loadFamily(cat) {
       );
       const ids = [];
       for (let i = 0; i < 40; i += 1) for (const list of lists) if (list[i] != null && !ids.includes(list[i])) ids.push(list[i]);
-      // Two rounds, so the museum is never asked for more than 36 at once.
-      const objects = [];
-      for (const round of [ids.slice(0, 36), ids.slice(36, 72)]) {
-        objects.push(
-          ...(await Promise.all(
-            round.map((id) =>
-              fetch(`${MET}/objects/${id}`)
+      // The museum turns away bursts, so works are asked for a few at a time,
+      // and any that fail get one more try after a pause.
+      const wanted = ids.slice(0, 60);
+      const got = new Map();
+      const fetchAll = async (list, lanes) => {
+        const queue = [...list];
+        await Promise.all(
+          Array.from({ length: lanes }, async () => {
+            while (queue.length) {
+              const id = queue.shift();
+              const object = await fetch(`${MET}/objects/${id}`)
                 .then((r) => (r.ok ? r.json() : null))
-                .catch(() => null),
-            ),
-          )),
+                .catch(() => null);
+              if (object) got.set(id, object);
+            }
+          }),
         );
+      };
+      await fetchAll(wanted, 5);
+      const missed = wanted.filter((id) => !got.has(id));
+      if (missed.length) {
+        await new Promise((r) => setTimeout(r, 1500));
+        await fetchAll(missed, 2);
       }
+      const objects = wanted.map((id) => got.get(id)).filter(Boolean);
       // A search for "green" also finds painters called Green. Those are kept
       // only if the word is in the title too.
       const named = (o) =>
@@ -4933,7 +4946,7 @@ function loadFamily(cat) {
         }));
       items = await Promise.all(found.map(async (item) => ({ ...item, ...((await measure(`${item.image}?iw=1`)) || {}) })));
       try {
-        sessionStorage.setItem(key, JSON.stringify(items));
+        if (items.length >= 8) localStorage.setItem(key, JSON.stringify({ at: Date.now(), items }));
       } catch {
         // Storage full or blocked; the feed still shows.
       }
