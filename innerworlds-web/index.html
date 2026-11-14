@@ -808,6 +808,8 @@ button.tile { width: 100%; padding: 0; border: 0; text-align: left; cursor: poin
 .tile.work .tile-title { font-size: 16px; }
 .tile.work .mono-sm { color: var(--muted); }
 .feed-note { min-height: 120px; }
+#collection { display: flex; flex-direction: column; gap: 14px; }
+#collection .feed { margin-bottom: -10px; }
 
 .art-card {
   display: block;
@@ -4871,24 +4873,58 @@ function measure(url) {
   });
 }
 
-// Every work seen this session, by museum id. A work found under one colour
-// word can rank under another once it has been measured.
-const met = { pool: new Map(), loaded: new Set(), loading: new Map() };
+// Every work gathered so far, by museum id, and how far through each colour
+// family's search results the app has read. Kept in this browser for two
+// weeks, so the museum is asked for each work once. A work found under one
+// colour word can rank under another once it has been measured.
+const MET_KEY = `${APP.storage}:met6`;
+const MET_BATCH = 36;
+const met = { pool: new Map(), families: {}, loading: new Map(), restored: false };
 
-function loadFamily(cat) {
-  if (met.loaded.has(cat)) return Promise.resolve();
+function metRestore() {
+  if (met.restored) return;
+  met.restored = true;
+  try {
+    const kept = JSON.parse(localStorage.getItem(MET_KEY));
+    if (!kept || Date.now() - kept.at > 14 * 86400000) return;
+    for (const item of kept.works || []) {
+      if (item && Number.isInteger(item.id) && /^https:\/\/images\.metmuseum\.org\//.test(item.image || '')) met.pool.set(item.id, item);
+    }
+    for (const [cat, family] of Object.entries(kept.families || {})) {
+      if (CATS[cat] && family && Array.isArray(family.ids)) {
+        met.families[cat] = { ids: family.ids.filter(Number.isInteger), next: Number(family.next) || 0, retry: (family.retry || []).filter(Number.isInteger) };
+      }
+    }
+    met.at = kept.at;
+  } catch {
+    // Nothing usable kept; start again.
+  }
+}
+
+function metKeep() {
+  try {
+    localStorage.setItem(MET_KEY, JSON.stringify({ at: met.at || Date.now(), works: [...met.pool.values()].slice(-400), families: met.families }));
+  } catch {
+    // Storage full or blocked; the feed still shows for this visit.
+  }
+}
+
+function familyHasMore(cat) {
+  const family = met.families[cat];
+  return !family || family.next < family.ids.length || family.retry.length > 0;
+}
+
+// Reads the next few works for a colour family. The museum turns away bursts,
+// so works are asked for a few at a time, and reading stops early if it
+// starts refusing; whatever was missed is tried again next time.
+function loadFamily(cat, more = false) {
+  metRestore();
+  const known = met.families[cat];
+  if (known && known.next > 0 && !more) return Promise.resolve();
   if (met.loading.has(cat)) return met.loading.get(cat);
   const job = (async () => {
-    // Kept for a week, so the museum is asked once and not on every visit.
-    const key = `${APP.storage}:met5:${cat}`;
-    let items = null;
-    try {
-      const cached = JSON.parse(localStorage.getItem(key));
-      if (cached && Array.isArray(cached.items) && cached.items.length && Date.now() - cached.at < 7 * 86400000) items = cached.items;
-    } catch {
-      // No usable cache; fetch again.
-    }
-    if (!items) {
+    let family = met.families[cat];
+    if (!family) {
       // Search moved to v1.1 (paged) in October 2026; single objects are still served from v1.
       const lists = await Promise.all(
         CATS[cat].words.map((word) =>
@@ -4900,75 +4936,72 @@ function loadFamily(cat) {
       );
       const ids = [];
       for (let i = 0; i < 40; i += 1) for (const list of lists) if (list[i] != null && !ids.includes(list[i])) ids.push(list[i]);
-      // The museum turns away bursts, so works are asked for a few at a time,
-      // and any that fail get one more try after a pause.
-      const wanted = ids.slice(0, 60);
-      const got = new Map();
-      const fetchAll = async (list, lanes) => {
-        const queue = [...list];
-        await Promise.all(
-          Array.from({ length: lanes }, async () => {
-            while (queue.length) {
-              const id = queue.shift();
-              const object = await fetch(`${MET}/objects/${id}`)
-                .then((r) => (r.ok ? r.json() : null))
-                .catch(() => null);
-              if (object) got.set(id, object);
-            }
-          }),
-        );
-      };
-      await fetchAll(wanted, 5);
-      const missed = wanted.filter((id) => !got.has(id));
-      if (missed.length) {
-        await new Promise((r) => setTimeout(r, 1500));
-        await fetchAll(missed, 2);
-      }
-      const objects = wanted.map((id) => got.get(id)).filter(Boolean);
-      // A search for "green" also finds painters called Green. Those are kept
-      // only if the word is in the title too.
-      const named = (o) =>
-        CATS[cat].words.some((word) => {
-          const whole = new RegExp(`\\b${word}\\b`, 'i');
-          return whole.test(o.artistDisplayName || '') && !whole.test(o.title || '');
-        });
-      const found = objects
-        .filter((o) => o && o.isPublicDomain === true && /^https:\/\/images\.metmuseum\.org\//.test(o.primaryImageSmall || '') && !named(o))
-        .map((o) => ({
-          id: o.objectID,
-          from: cat,
-          title: String(o.title || 'Untitled').slice(0, 120),
-          artist: String(o.artistDisplayName || 'Unknown maker').slice(0, 80),
-          date: String(o.objectDate || '').slice(0, 40),
-          medium: String(o.medium || '').slice(0, 90),
-          image: o.primaryImageSmall,
-          url: /^https:\/\/www\.metmuseum\.org\//.test(o.objectURL || '') ? o.objectURL : 'https://www.metmuseum.org/art/collection',
-        }));
-      items = await Promise.all(found.map(async (item) => ({ ...item, ...((await measure(`${item.image}?iw=1`)) || {}) })));
-      try {
-        if (items.length >= 8) localStorage.setItem(key, JSON.stringify({ at: Date.now(), items }));
-      } catch {
-        // Storage full or blocked; the feed still shows.
-      }
+      if (!ids.length) return;
+      family = { ids, next: 0, retry: [] };
+      met.families[cat] = family;
+      if (!met.at) met.at = Date.now();
     }
-    for (const item of items) if (!met.pool.has(item.id)) met.pool.set(item.id, item);
-    if (items.length) met.loaded.add(cat);
+
+    const batch = [...family.retry.splice(0, 12), ...family.ids.slice(family.next, family.next + MET_BATCH)];
+    family.next = Math.min(family.ids.length, family.next + MET_BATCH);
+    const queue = batch.filter((id) => !met.pool.has(id));
+    const got = [];
+    let refused = 0;
+    await Promise.all(
+      Array.from({ length: 4 }, async () => {
+        while (queue.length && refused < 3) {
+          const id = queue.shift();
+          const response = await fetch(`${MET}/objects/${id}`).catch(() => null);
+          if (!response || (!response.ok && response.status !== 404)) {
+            refused += 1;
+            family.retry.push(id);
+            continue;
+          }
+          refused = 0;
+          const object = response.ok ? await response.json().catch(() => null) : null;
+          if (object) got.push(object);
+        }
+      }),
+    );
+    family.retry.push(...queue);
+
+    // A search for "green" also finds painters called Green. Those are kept
+    // only if the word is in the title too.
+    const named = (o) =>
+      CATS[cat].words.some((word) => {
+        const whole = new RegExp(`\\b${word}\\b`, 'i');
+        return whole.test(o.artistDisplayName || '') && !whole.test(o.title || '');
+      });
+    const found = got
+      .filter((o) => o.isPublicDomain === true && /^https:\/\/images\.metmuseum\.org\//.test(o.primaryImageSmall || '') && !named(o))
+      .map((o) => ({
+        id: o.objectID,
+        title: String(o.title || 'Untitled').slice(0, 120),
+        artist: String(o.artistDisplayName || 'Unknown maker').slice(0, 80),
+        date: String(o.objectDate || '').slice(0, 40),
+        medium: String(o.medium || '').slice(0, 90),
+        image: o.primaryImageSmall,
+        url: /^https:\/\/www\.metmuseum\.org\//.test(o.objectURL || '') ? o.objectURL : 'https://www.metmuseum.org/art/collection',
+      }));
+    const items = await Promise.all(found.map(async (item) => ({ ...item, ...((await measure(`${item.image}?iw=1`)) || {}) })));
+    for (const item of items) met.pool.set(item.id, item);
+    metKeep();
   })().finally(() => met.loading.delete(cat));
   met.loading.set(cat, job);
   return job;
 }
 
-// The works that are most this colour, strongest first. Unmeasured works
-// found under this colour's own words fill in if too few were measured.
-function ranked(cat, n = 18) {
-  const all = [...met.pool.values()];
-  const strong = all
-    .filter((item) => item.mix && (item.mix[cat] || 0) >= 0.05)
-    .sort((a, b) => b.mix[cat] - a.mix[cat])
-    .slice(0, n);
-  if (strong.length >= 6) return strong;
-  const rest = all.filter((item) => item.from === cat && !strong.includes(item));
-  return [...strong, ...rest].slice(0, n);
+// The works that are most this colour, strongest first, from everything
+// gathered so far. If few are strongly that colour, the rest of what was
+// found under this family's own words follows, still in colour order.
+function ranked(cat, n = 24) {
+  const share = (item) => (item.mix && item.mix[cat]) || 0;
+  const all = [...met.pool.values()].sort((a, b) => share(b) - share(a));
+  const strong = all.filter((item) => share(item) >= 0.05);
+  if (strong.length >= 8) return strong.slice(0, n);
+  const own = new Set((met.families[cat] || { ids: [] }).ids);
+  const rest = all.filter((item) => share(item) < 0.05 && own.has(item.id));
+  return [...strong, ...rest].slice(0, Math.max(8, Math.min(n, strong.length + 4)));
 }
 
 function savedWorks() {
@@ -5092,26 +5125,42 @@ function feedFilters() {
 async function mountCollection() {
   const holder = document.getElementById('collection');
   if (!holder || !APP.hosted) return;
+  metRestore();
   const filter = state.feed.filter;
-  const show = (items, empty) => {
-    holder.innerHTML = items.length ? `<div class="feed">${workTiles(items)}</div>` : `<p class="muted-sm feed-note" role="status">${esc(empty)}</p>`;
-    wireWorks(holder, items);
-  };
   if (filter === 'saved') {
-    show(savedWorks(), 'Nothing saved yet. Open a painting and press Save.');
+    const saved = savedWorks();
+    holder.innerHTML = saved.length
+      ? `<div class="feed">${workTiles(saved)}</div>`
+      : '<p class="muted-sm feed-note" role="status">Nothing saved yet. Open a painting and press Save.</p>';
+    wireWorks(holder, saved);
     return;
   }
   const family = feedFamily(filter);
-  if (!met.loaded.has(family)) {
-    holder.innerHTML = '<p class="muted-sm feed-note" role="status">Gathering paintings and measuring their colour…</p>';
-    try {
-      await loadFamily(family);
-    } catch {
-      // Shown as an empty feed below.
-    }
-    if (!holder.isConnected || state.feed.filter !== filter) return;
-  }
-  show(ranked(family), 'The museum did not answer just now. Try again in a moment.');
+  const show = () => {
+    const items = ranked(family);
+    const busy = met.loading.has(family);
+    holder.innerHTML = `${
+      items.length
+        ? `<div class="feed">${workTiles(items)}</div>`
+        : `<p class="muted-sm feed-note" role="status">${busy ? 'Gathering paintings and measuring their colour…' : 'The museum did not answer just now. Try again in a moment.'}</p>`
+    }${
+      familyHasMore(family) || !items.length
+        ? `<button type="button" class="button ghost" id="feed-more"${busy ? ' disabled' : ''}>${busy ? 'Gathering…' : items.length ? 'Gather more paintings' : 'Try again'}</button>`
+        : ''
+    }`;
+    wireWorks(holder, items);
+    const moreButton = document.getElementById('feed-more');
+    if (moreButton) moreButton.onclick = () => gather(true);
+  };
+  const gather = async (more) => {
+    const job = loadFamily(family, more).catch(() => {});
+    show();
+    await job;
+    if (holder.isConnected && state.feed.filter === filter) show();
+  };
+  const known = met.families[family];
+  if (known && known.next > 0) show();
+  else gather(false);
 }
 
 // One painting for the day, chosen by colour: the colour the person picked
@@ -5140,7 +5189,7 @@ async function mountDailyArt() {
     // Handled as no painting below.
   }
   if (!holder.isConnected) return;
-  const top = ranked(family, 6);
+  const top = ranked(family, 6).filter((item) => item.mix && (item.mix[family] || 0) >= 0.05);
   if (!top.length) {
     holder.innerHTML = '';
     return;
