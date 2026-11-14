@@ -4749,16 +4749,17 @@ const MET = 'https://collectionapi.metmuseum.org/public/collection/v1';
 
 // Colour families. A pixel belongs to exactly one, so a painting can be
 // scored for how much of it is, say, green, and a pigment maps to the same
-// family its own colour falls in.
+// family its own colour falls in. The words only gather candidates from the
+// museum's search; the measured colour decides what is shown and in what order.
 const CATS = {
-  red: { label: 'Red', hex: '#B5382A', words: ['red'] },
-  gold: { label: 'Gold', hex: '#D9A93B', words: ['yellow', 'gold'] },
-  green: { label: 'Green', hex: '#3D6A58', words: ['green'] },
-  blue: { label: 'Blue', hex: '#2F4E8C', words: ['blue'] },
-  violet: { label: 'Violet', hex: '#6B4A7E', words: ['violet', 'purple'] },
-  earth: { label: 'Earth', hex: '#7A5230', words: ['autumn', 'brown'] },
-  night: { label: 'Night', hex: '#16161D', words: ['night', 'moonlight'] },
-  light: { label: 'Light', hex: '#E9E2D2', words: ['white', 'snow'] },
+  red: { label: 'Red', hex: '#B5382A', words: ['red', 'rose', 'poppies'] },
+  gold: { label: 'Gold', hex: '#D9A93B', words: ['yellow', 'gold', 'wheat'] },
+  green: { label: 'Green', hex: '#3D6A58', words: ['green', 'landscape', 'garden'] },
+  blue: { label: 'Blue', hex: '#2F4E8C', words: ['blue', 'sea', 'sky'] },
+  violet: { label: 'Violet', hex: '#6B4A7E', words: ['violet', 'purple', 'irises'] },
+  earth: { label: 'Earth', hex: '#7A5230', words: ['autumn', 'brown', 'desert'] },
+  night: { label: 'Night', hex: '#16161D', words: ['night', 'moonlight', 'nocturne'] },
+  light: { label: 'Light', hex: '#E9E2D2', words: ['white', 'snow', 'winter'] },
 };
 const ELEMENT_CAT = { fire: 'red', earth: 'earth', air: 'gold', water: 'blue' };
 
@@ -4774,7 +4775,7 @@ function catOf(r, g, b) {
   h = (h * 60 + 360) % 360;
   if (h < 18 || h >= 335) return 'red';
   if (h < 48) return l < 0.5 || c < 0.35 ? 'earth' : 'gold';
-  if (h < 70) return l < 0.35 ? 'earth' : 'gold';
+  if (h < 58) return l < 0.35 ? 'earth' : 'gold';
   if (h < 170) return 'green';
   if (h < 255) return 'blue';
   return 'violet';
@@ -4878,7 +4879,7 @@ function loadFamily(cat) {
   if (met.loaded.has(cat)) return Promise.resolve();
   if (met.loading.has(cat)) return met.loading.get(cat);
   const job = (async () => {
-    const key = `${APP.storage}:met3:${cat}`;
+    const key = `${APP.storage}:met4:${cat}`;
     let items = null;
     try {
       const cached = JSON.parse(sessionStorage.getItem(key));
@@ -4898,15 +4899,28 @@ function loadFamily(cat) {
       );
       const ids = [];
       for (let i = 0; i < 40; i += 1) for (const list of lists) if (list[i] != null && !ids.includes(list[i])) ids.push(list[i]);
-      const objects = await Promise.all(
-        ids.slice(0, 56).map((id) =>
-          fetch(`${MET}/objects/${id}`)
-            .then((r) => (r.ok ? r.json() : null))
-            .catch(() => null),
-        ),
-      );
+      // Two rounds, so the museum is never asked for more than 36 at once.
+      const objects = [];
+      for (const round of [ids.slice(0, 36), ids.slice(36, 72)]) {
+        objects.push(
+          ...(await Promise.all(
+            round.map((id) =>
+              fetch(`${MET}/objects/${id}`)
+                .then((r) => (r.ok ? r.json() : null))
+                .catch(() => null),
+            ),
+          )),
+        );
+      }
+      // A search for "green" also finds painters called Green. Those are kept
+      // only if the word is in the title too.
+      const named = (o) =>
+        CATS[cat].words.some((word) => {
+          const whole = new RegExp(`\\b${word}\\b`, 'i');
+          return whole.test(o.artistDisplayName || '') && !whole.test(o.title || '');
+        });
       const found = objects
-        .filter((o) => o && o.isPublicDomain === true && /^https:\/\/images\.metmuseum\.org\//.test(o.primaryImageSmall || ''))
+        .filter((o) => o && o.isPublicDomain === true && /^https:\/\/images\.metmuseum\.org\//.test(o.primaryImageSmall || '') && !named(o))
         .map((o) => ({
           id: o.objectID,
           from: cat,
