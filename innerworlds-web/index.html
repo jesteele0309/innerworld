@@ -5517,7 +5517,9 @@ function onRoute() {
 
 function go(route) {
   if (location.hash === `#${route}`) {
-    render();
+    // The address already says this route, so no hashchange will fire. Work
+    // the route out again; a plain render would redraw the screen being left.
+    onRoute();
     return;
   }
   location.hash = route;
