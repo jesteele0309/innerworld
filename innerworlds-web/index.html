@@ -886,6 +886,29 @@ a.button { text-decoration: none; }
 .tile-text { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px 12px; }
 .tile-title { font-family: var(--serif); font-size: 19px; line-height: 1.15; }
 
+/* ── AI Artist ──────────────────────────────────────────────────────────── */
+
+.artist-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.artist-cell {
+  position: relative;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 13px;
+}
+.artist-cell img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.artist-cell[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--ground), 0 0 0 4px var(--accent-light); }
+.artist-cell.is-waiting { animation: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .artist-cell.is-waiting { animation: waiting 1.6s ease-in-out infinite; }
+  @keyframes waiting { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+}
+.artist-entry { border: 1px solid var(--rule); background: transparent; }
+
 /* ── wide screens ───────────────────────────────────────────────────────── */
 /* Explore is a wall of pictures, so on a desktop it takes the width. Every
  * other screen is for reading and stays a single column. */
@@ -960,7 +983,10 @@ a.button { text-decoration: none; }
 
   <h3>What is generated, and what is not</h3>
   <p>Every question, essay, drift sequence and walk is written ahead of time and is the same for everyone. Suggestions and patterns in the Journal are counted on this device from your own entries. The texts in this first edition were drafted with AI assistance.</p>
-  <p>The painting is the one thing made for you. It is drawn on your device from your palette and mark style, and nothing leaves this machine. Your reflection is never used to make it.</p>
+  <p>The painting is the one thing made for you. “Paint my day” draws it on your device from your palette and mark style; nothing leaves this machine and your reflection is not used.</p>
+
+  <h3>The AI Artist</h3>
+  <p>This is separate and only runs when you press “Make four paintings”. The prompt you see on that screen, which starts from your own words and which you can edit, is sent with your palette and chosen style to FLUX, an image model made by Black Forest Labs, through Vercel. Four images come back and the one you keep is stored on this device. This site does not store or log the prompt. The images are made by an AI model and can be wrong, odd or unlike what you asked for.</p>
 
   <h3>AI reflections</h3>
   <p>These are off unless you turn them on in the Journal. When you press “Ask for a reflection”, your twelve most recent entries and notes (the question, what you wrote, your feeling words and colour) are sent to Claude, an AI model made by Anthropic, which writes a short reflection back. Nothing is sent at any other time. The reflection can be wrong and is not medical or psychological advice.</p>
@@ -3335,6 +3361,17 @@ function html(ctx) {
 
       ${quote}
       ${painterChoice}
+      ${
+        APP.hosted
+          ? `<a class="resume artist-entry" href="#artist">
+              <span class="stack-xs">
+                <span class="resume-title">Or ask the AI Artist</span>
+                <span class="muted-sm">Describe a picture in your own words and choose from four. This sends your words to an image model.</span>
+              </span>
+              ${icon('forward')}
+            </a>`
+          : ''
+      }
     </div>
 
     <div class="pane-actions">
@@ -3347,7 +3384,7 @@ function html(ctx) {
 }
 
 function disclosure() {
-  return 'This painting is made on your device from the palette and the mark style. Your words are never used to make it, and nothing leaves this machine.';
+  return 'Paint my day makes the painting on your device from the palette and the mark style. Your words are not used for it, and nothing leaves this machine.';
 }
 
 function firstSentence(text) {
@@ -3504,7 +3541,9 @@ function mount(ctx) {
     };
   }
 
-  if (repaint) {
+  if (repaint && state.viewing && state.viewing.painter === 'model') {
+    repaint.onclick = () => ctx.go('artist');
+  } else if (repaint) {
     repaint.onclick = async () => {
       status.textContent = 'Repainting\u2026';
       try {
@@ -4722,8 +4761,8 @@ function aiPanel() {
 
 function reflectPrivacyLine() {
   return state.prefs.ai
-    ? 'This is saved on this device. It is only sent anywhere if you ask for an AI reflection in the Journal, and it is never used to make the painting.'
-    : 'This stays on this device. It is never used to make the painting, and nothing reads it but you.';
+    ? 'This is saved on this device. It is only sent anywhere if you ask for an AI reflection in the Journal, or put it in a prompt for the AI Artist.'
+    : 'This stays on this device unless you put it in a prompt for the AI Artist. The painting made on your device never uses it.';
 }
 
 // ── Speaking an entry ────────────────────────────────────────────────────
@@ -5234,7 +5273,206 @@ async function mountDailyArt() {
   wireWorks(holder, [item]);
 }
 
+// ── AI Artist ────────────────────────────────────────────────────────────
+// A prompt, a style and four pictures to choose from. Nothing is sent until
+// the button is pressed, and what is sent is exactly what the screen shows.
+
+const ARTIST_STYLES = [
+  ['painterly', 'Oil paint'],
+  ['watercolour', 'Watercolour'],
+  ['ink', 'Ink and line'],
+  ['abstract', 'Abstract'],
+  ['dream', 'Dreamlike'],
+  ['photo', 'Photograph'],
+  ['none', 'No style'],
+];
+
+const artist = { prompt: null, style: 'painterly', usePalette: true, cells: [], picked: -1, busy: false, error: '' };
+
+function artistPalette() {
+  return derivePalette(state.content, state.draft.feelings, { colour: state.draft.colour, lean: state.prefs.lean, sky: skyTint() });
+}
+
+function artistStartingPrompt() {
+  const words = state.draft.response.trim().replace(/\s+/g, ' ');
+  return (words ? words : state.content.question).slice(0, 600);
+}
+
+async function artistMake() {
+  const prompt = (artist.prompt || '').trim();
+  if (artist.busy || !prompt) return;
+  artist.busy = true;
+  artist.error = '';
+  artist.picked = -1;
+  artist.cells = [null, null, null, null];
+  render();
+  const palette = artist.usePalette ? artistPalette().pigments.slice(0, 4).map((p) => ({ name: p.name, hex: p.hex })) : [];
+  const codes = [];
+  await Promise.all(
+    artist.cells.map(async (_, i) => {
+      try {
+        const response = await fetch('/api/paint', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ prompt, style: artist.style, palette }),
+          signal: AbortSignal.timeout(70000),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !/^data:image\/(jpeg|png|webp);base64,/.test(data.image || '')) throw Object.assign(new Error('failed'), { code: data.error || String(response.status) });
+        artist.cells[i] = data.image;
+      } catch (error) {
+        artist.cells[i] = false;
+        codes.push((error && error.code) || 'failed');
+      }
+      if (state.route === 'artist') render();
+    }),
+  );
+  artist.busy = false;
+  if (codes.length) {
+    const all = codes.length === 4;
+    artist.error = codes.includes('rate_limited')
+      ? 'That is enough pictures for this hour. Try again later.'
+      : codes.includes('not_configured') || codes.includes('no_credit')
+        ? 'This site has no image model connected just now.'
+        : !all
+          ? 'Some of the four could not be made.'
+          : codes.includes('refused')
+            ? 'The image model would not make a picture from that prompt. Try different words.'
+            : 'The paintings could not be made. Nothing was saved or changed.';
+  }
+  if (state.route === 'artist') render();
+}
+
+async function artistKeep() {
+  const image = artist.cells[artist.picked];
+  if (!image) return;
+  const prompt = (artist.prompt || '').trim();
+  const palette = artistPalette();
+  const piece = ensureTodayPiece();
+  piece.palette = palette.pigments.map((p) => p.key);
+  piece.mark = state.prefs.mark;
+  piece.title = piece.title || titleFor(state.content, palette);
+  piece.line = state.content.question;
+  piece.response = state.draft.response;
+  piece.feelings = state.draft.feelings;
+  piece.colour = state.draft.colour;
+  piece.question = state.content.question;
+  const blob = await (await fetch(image)).blob();
+  await store.images.put(piece.id, blob);
+  piece.painter = 'model';
+  piece.seed = null;
+  piece.prompt = prompt;
+  piece.alt = `A picture made by an AI model from the prompt: ${prompt.slice(0, 140)}`;
+  piece.why = `Made by FLUX, an AI image model, from this prompt${artist.usePalette ? ' and today’s palette' : ''}: “${prompt}”. The prompt was sent to the model when you pressed the button. An AI picture cannot be repainted from a backup.`;
+  piece.painting = true;
+  await savePiece(piece);
+  store.releaseImageUrl(piece.id);
+  delete state.thumbs[piece.id];
+  state.viewing = piece;
+  await loadPortraitUrl();
+  artist.cells = [];
+  artist.picked = -1;
+  go('portrait');
+}
+
+const artistView = (() => {
+  function html(ctx) {
+    if (artist.prompt === null) artist.prompt = artistStartingPrompt();
+    const palette = artistPalette();
+    const styles = ARTIST_STYLES.map(
+      ([id, label]) => `<button type="button" class="chip${artist.style === id ? ' is-on' : ''}" data-artist-style="${id}" aria-pressed="${artist.style === id}">${esc(label)}</button>`,
+    ).join('');
+    const cells = artist.cells
+      .map((cell, i) =>
+        cell
+          ? `<button type="button" class="artist-cell" data-artist-pick="${i}" aria-pressed="${artist.picked === i}" aria-label="Painting ${i + 1} of 4"><img src="${esc(cell)}" alt="Painting ${i + 1}, made by an AI model from your prompt."></button>`
+          : `<div class="artist-cell${cell === null ? ' is-waiting' : ''}" role="img" aria-label="${cell === null ? 'Being painted' : 'Could not be made'}"></div>`,
+      )
+      .join('');
+
+    const body = `
+      <header class="bar">
+        <div class="row-between">
+          ${backLink('make')}
+          <span class="eyebrow">AI Artist</span>
+          <span class="bar-spacer"></span>
+        </div>
+      </header>
+
+      <div class="pane">
+        <h1 class="display-sm">Describe the picture.</h1>
+        <label class="field">
+          <span class="kicker muted">Your prompt</span>
+          <textarea id="artist-prompt" class="note-input" maxlength="600" placeholder="A place, a mood, a thing you saw. Your own words work best.">${esc(artist.prompt)}</textarea>
+        </label>
+        <p class="muted-sm">${state.draft.response.trim() ? 'This starts from what you wrote today. Change it as much as you like.' : 'This starts from today’s question. Change it as much as you like.'}</p>
+
+        <fieldset class="marks">
+          <legend class="kicker muted">Style</legend>
+          <div class="chips">${styles}</div>
+        </fieldset>
+
+        <button type="button" class="chip${artist.usePalette ? ' is-on' : ''}" id="artist-palette" aria-pressed="${artist.usePalette}">
+          ${artist.usePalette ? 'Using' : 'Not using'} today’s palette: ${esc(joinList(palette.pigments.slice(0, 4).map((p) => p.name.toLowerCase())))}
+        </button>
+
+        ${artist.cells.length ? `<div class="artist-grid">${cells}</div>` : ''}
+        ${artist.error ? `<p class="muted-sm" role="status">${esc(artist.error)}</p>` : ''}
+        ${
+          artist.cells.some(Boolean) && !artist.busy
+            ? `<p class="muted-sm">${artist.picked < 0 ? 'Tap the one you want to keep.' : 'Made by an AI model. It can be wrong or unlike what you asked for.'}</p>`
+            : ''
+        }
+      </div>
+
+      <div class="pane-actions">
+        <p class="disclosure">${icon('info', 'icon-sm')}<span>Pressing the button sends the prompt above${artist.usePalette ? ', your palette' : ''} and the style to FLUX, an AI image model, through Vercel. Nothing is sent until you press it.</span></p>
+        ${artist.picked >= 0 && !artist.busy ? '<button type="button" id="artist-keep" class="button primary">Keep this as today’s portrait</button>' : ''}
+        <button type="button" id="artist-make" class="button ${artist.picked >= 0 && !artist.busy ? 'ghost' : 'primary'}"${artist.busy ? ' disabled' : ''}>${
+          artist.busy ? 'Painting four…' : artist.cells.length ? 'Make four more' : 'Make four paintings'
+        }</button>
+      </div>`;
+
+    return screen({ route: 'today', body, tabs: false });
+  }
+
+  function mount() {
+    const field = document.getElementById('artist-prompt');
+    field.oninput = () => {
+      artist.prompt = field.value;
+    };
+    for (const button of document.querySelectorAll('[data-artist-style]')) {
+      button.onclick = () => {
+        artist.style = button.dataset.artistStyle;
+        render();
+      };
+    }
+    document.getElementById('artist-palette').onclick = () => {
+      artist.usePalette = !artist.usePalette;
+      render();
+    };
+    for (const button of document.querySelectorAll('[data-artist-pick]')) {
+      button.onclick = () => {
+        artist.picked = Number(button.dataset.artistPick);
+        render();
+      };
+    }
+    document.getElementById('artist-make').onclick = () => {
+      if (!field.value.trim()) {
+        field.focus();
+        return;
+      }
+      artistMake();
+    };
+    const keep = document.getElementById('artist-keep');
+    if (keep) keep.onclick = () => artistKeep();
+  }
+
+  return { html, mount };
+})();
+
 const VIEWS = {
+  artist: artistView,
   tune: tuneView,
   sky: skyView,
   journal: journalView,
