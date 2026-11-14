@@ -3715,7 +3715,7 @@ function html(ctx) {
       <h1 class="display">${APP.hosted ? 'Paintings, sorted by colour.' : 'Every question, and the colour it brings.'}</h1>
       ${
         APP.hosted
-          ? `<p class="prose-sm">Public-domain works from the Met’s open collection, measured for colour on this device. Tap one for its source, or to save it.</p>
+          ? `<p class="prose-sm">Public-domain European paintings from the Met’s open collection, measured for colour on this device. Tap one for its source, or to save it.</p>
              ${feedFilters()}
              <div id="collection"></div>
              <p class="kicker muted">The ${days.length} questions, painted here</p>`
@@ -4754,13 +4754,13 @@ const MET = 'https://collectionapi.metmuseum.org/public/collection/v1';
 // family its own colour falls in. The words only gather candidates from the
 // museum's search; the measured colour decides what is shown and in what order.
 const CATS = {
-  red: { label: 'Red', hex: '#B5382A', words: ['red', 'rose', 'poppies'] },
-  gold: { label: 'Gold', hex: '#D9A93B', words: ['yellow', 'gold', 'wheat'] },
-  green: { label: 'Green', hex: '#3D6A58', words: ['green', 'landscape', 'garden'] },
+  red: { label: 'Red', hex: '#B5382A', words: ['red', 'roses', 'poppies'] },
+  gold: { label: 'Gold', hex: '#D9A93B', words: ['yellow', 'wheat', 'haystacks'] },
+  green: { label: 'Green', hex: '#3D6A58', words: ['green', 'meadow', 'forest'] },
   blue: { label: 'Blue', hex: '#2F4E8C', words: ['blue', 'sea', 'sky'] },
-  violet: { label: 'Violet', hex: '#6B4A7E', words: ['violet', 'purple', 'irises'] },
-  earth: { label: 'Earth', hex: '#7A5230', words: ['autumn', 'brown', 'desert'] },
-  night: { label: 'Night', hex: '#16161D', words: ['night', 'moonlight', 'nocturne'] },
+  violet: { label: 'Violet', hex: '#6B4A7E', words: ['violet', 'irises', 'lilacs'] },
+  earth: { label: 'Earth', hex: '#7A5230', words: ['autumn', 'brown', 'peasant'] },
+  night: { label: 'Night', hex: '#16161D', words: ['night', 'moonlight', 'candlelight'] },
   light: { label: 'Light', hex: '#E9E2D2', words: ['white', 'snow', 'winter'] },
 };
 const ELEMENT_CAT = { fire: 'red', earth: 'earth', air: 'gold', water: 'blue' };
@@ -4877,7 +4877,7 @@ function measure(url) {
 // family's search results the app has read. Kept in this browser for two
 // weeks, so the museum is asked for each work once. A work found under one
 // colour word can rank under another once it has been measured.
-const MET_KEY = `${APP.storage}:met6`;
+const MET_KEY = `${APP.storage}:met7`;
 const MET_BATCH = 36;
 const met = { pool: new Map(), families: {}, loading: new Map(), restored: false };
 
@@ -4926,9 +4926,10 @@ function loadFamily(cat, more = false) {
     let family = met.families[cat];
     if (!family) {
       // Search moved to v1.1 (paged) in October 2026; single objects are still served from v1.
+      // Department 11 is European Paintings: almost all public domain, with images.
       const lists = await Promise.all(
         CATS[cat].words.map((word) =>
-          fetch(`${MET}.1/search?hasImages=true&medium=Paintings&limit=40&offset=0&q=${encodeURIComponent(word)}`)
+          fetch(`${MET}.1/search?hasImages=true&departmentId=11&limit=40&offset=0&q=${encodeURIComponent(word)}`)
             .then((r) => r.json())
             .then((found) => (Array.isArray(found.objectIDs) ? found.objectIDs.filter(Number.isInteger) : []))
             .catch(() => []),
